@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import bpy
+import bmesh
 from mathutils import Vector
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
@@ -70,33 +71,93 @@ def finish_mesh(obj, name, material, bevel=0.0):
     return obj
 
 
+def create_mesh_object(name, vertices, faces, location=(0.0, 0.0, 0.0)):
+    """Create a mesh from local-space vertex/face data without a context-sensitive primitive operator."""
+    if not vertices or not faces:
+        raise ValueError(f"{name} needs vertices and faces")
+    mesh = bpy.data.meshes.new(f"{name}_mesh")
+    mesh.from_pydata(vertices, [], faces)
+    if mesh.validate(verbose=True, clean_customdata=True):
+        bpy.data.meshes.remove(mesh)
+        raise ValueError(f"{name} contained invalid geometry; source data was rejected")
+    mesh.update(calc_edges=True)
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.location = location
+    return obj
+
+
 def add_cube(name, location, dimensions, material, bevel=0.0):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=location)
-    obj = bpy.context.object
-    obj.dimensions = dimensions
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    """Create a six-sided box from eight exact vertices and six quads."""
+    dx, dy, dz = (float(value) / 2.0 for value in dimensions)
+    if min(dx, dy, dz) <= 0:
+        raise ValueError(f"Cube {name} dimensions must be positive")
+    vertices = [
+        (-dx, -dy, -dz), ( dx, -dy, -dz), ( dx,  dy, -dz), (-dx,  dy, -dz),
+        (-dx, -dy,  dz), ( dx, -dy,  dz), ( dx,  dy,  dz), (-dx,  dy,  dz),
+    ]
+    faces = [
+        (0, 3, 2, 1),  # bottom (-Z)
+        (4, 5, 6, 7),  # top (+Z)
+        (0, 1, 5, 4),  # front (-Y)
+        (1, 2, 6, 5),  # right (+X)
+        (2, 3, 7, 6),  # back (+Y)
+        (3, 0, 4, 7),  # left (-X)
+    ]
+    obj = create_mesh_object(name, vertices, faces, location)
     return finish_mesh(obj, name, material, bevel)
 
 
 def add_ico(name, location, dimensions, material, subdivisions=2):
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=subdivisions, radius=1, location=location)
-    obj = bpy.context.object
-    obj.dimensions = dimensions
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    """Build an icosphere in BMesh, then scale its local vertices to an ellipsoid."""
+    if subdivisions < 1:
+        raise ValueError("Icosphere subdivisions must be at least 1")
+    radii = tuple(float(value) / 2.0 for value in dimensions)
+    if min(radii) <= 0:
+        raise ValueError(f"Icosphere {name} dimensions must be positive")
+    bm = bmesh.new()
+    try:
+        bmesh.ops.create_icosphere(bm, subdivisions=int(subdivisions), radius=1.0)
+        for vertex in bm.verts:
+            vertex.co.x *= radii[0]
+            vertex.co.y *= radii[1]
+            vertex.co.z *= radii[2]
+        bm.normal_update()
+        mesh = bpy.data.meshes.new(f"{name}_mesh")
+        bm.to_mesh(mesh)
+        mesh.update(calc_edges=True)
+    finally:
+        bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.location = location
     return finish_mesh(obj, name, material)
 
 
 def add_segment(name, start, end, radius_start, radius_end, material, vertices=8):
+    """Create a tapered, capped polygonal segment using an explicit vertex ring layout."""
     start_v, end_v = Vector(start), Vector(end)
     direction = end_v - start_v
     length = direction.length
     if length < 1e-5:
         raise ValueError(f"Segment {name} has zero length")
-    bpy.ops.mesh.primitive_cone_add(vertices=vertices, radius1=radius_start, radius2=radius_end,
-                                    depth=length, end_fill_type="NGON", location=(start_v + end_v) / 2)
-    obj = bpy.context.object
-    obj.rotation_mode = "QUATERNION"
-    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
+    if vertices < 3 or radius_start <= 0 or radius_end <= 0:
+        raise ValueError(f"Segment {name} needs at least 3 sides and positive radii")
+
+    rotation = direction.to_track_quat("Z", "Y")
+    centre = (start_v + end_v) * 0.5
+    ring = int(vertices)
+    local_vertices = []
+    for z, radius in ((-length * 0.5, radius_start), (length * 0.5, radius_end)):
+        for i in range(ring):
+            angle = 2.0 * math.pi * i / ring
+            local = Vector((math.cos(angle) * radius, math.sin(angle) * radius, z))
+            local_vertices.append(tuple(rotation @ local))
+    faces = [tuple(reversed(range(ring))), tuple(range(ring, ring * 2))]
+    for i in range(ring):
+        nxt = (i + 1) % ring
+        faces.append((i, nxt, ring + nxt, ring + i))
+    obj = create_mesh_object(name, local_vertices, faces, centre)
     return finish_mesh(obj, name, material)
 
 

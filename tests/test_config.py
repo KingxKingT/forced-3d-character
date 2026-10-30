@@ -71,6 +71,17 @@ class ConfigValidationTests(unittest.TestCase):
         data["features"]["hair_style"] = "long_braids"
         self.assertTrue(any("features.hair_style must be one of" in error for error in validate_config(data)))
 
+    def test_generator_uses_data_and_bmesh_geometry_not_primitive_add(self):
+        source = (ROOT / "scripts/blender/create_character.py").read_text(encoding="utf-8")
+        self.assertNotIn("bpy.ops.mesh.primitive_", source)
+        self.assertIn("mesh.from_pydata(vertices, [], faces)", source)
+        self.assertIn("bmesh.ops.create_icosphere", source)
+
+    def test_generator_has_explicit_tapered_segment_geometry(self):
+        source = (ROOT / "scripts/blender/create_character.py").read_text(encoding="utf-8")
+        self.assertIn("local_vertices.append(tuple(rotation @ local))", source)
+        self.assertIn("faces.append((i, nxt, ring + nxt, ring + i))", source)
+
 
 if __name__ == "__main__":
     unittest.main()
