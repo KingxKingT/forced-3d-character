@@ -18,12 +18,14 @@ The result is a **static editable multi-part low-poly character**. It is not aut
 ## Repository layout
 
 ```text
+AGENTS.md                        persistent project goals and agent instructions
 SKILL.md                         universal modelling and quality-gate workflow
 references/bmesh_cheatsheet.md   practical construction and defect-fix reference
 configs/default_character.json
 examples/dark_suit_purple_eyes.json
 scripts/
   geometry_core.py              Blender-independent geometry and diagnostics
+  hair_cards.py                 five-parameter CHARM-inspired hair-card mesh builder
   validate_config.py
   blender/
     mesh_tools.py               validated bpy/bmesh adapter and materials
@@ -66,7 +68,7 @@ blender --background --factory-startup --python-exit-code 1 \
 
 Outputs include `character.glb`, editable `character.blend`, `model_report.json`, the copied configuration, and front/side/back/three-quarter/head/hand previews. Use `--no-render` to suppress previews or omit `--save-blend` if only export files are needed. The generator clears the startup scene, so run it in a dedicated background process rather than an unsaved interactive scene.
 
-The JSON controls name, scale, palette, hair style, facial options, outfit details, render resolution/samples, and exports. Existing `side_swept` and `short` hair configurations remain supported.
+The JSON controls name, scale, palette, hair style, facial options, outfit details, render resolution/samples, and exports. Hair styles include `manhwa_layered`, `side_swept`, and `short`; `manhwa_layered` is the current reference-driven benchmark, but its visual match still requires Blender renders and human review.
 
 ## Validate the source scene
 

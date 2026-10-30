@@ -26,7 +26,7 @@
 - [MANO](https://mano.is.tue.mpg.de/) — hand-model research; no model data redistributed.
 - [Instant Field-Aligned Meshes](https://igl.ethz.ch/projects/instant-meshes/) and [Instant Meshes source](https://github.com/wjakob/instant-meshes).
 - [QuadriFlow source](https://github.com/hjwdzh/QuadriFlow) — check actual `LICENSE.txt` and dependency options.
-- [CHARM anime hair parameterization](https://arxiv.org/html/2509.21114v1) — control-point/width/thickness representation; neural model not used.
+- [CHARM: Control-point-based 3D Anime Hairstyle Auto-Regressive Modeling](https://hyzcluster.github.io/charm/) and [paper](https://arxiv.org/abs/2509.21114) — five-parameter hair-card representation; the upstream [code](https://github.com/hyz317/CHARM) is GPL-3.0. This repo implements the geometric representation independently; it does not bundle CHARM source, weights, or data. See [integration notes](docs/charm-hair-integration.md).
 - [Hair Meshes](https://www.cemyuksel.com/research/hairmeshes/hairmeshes.pdf) — generalized-cylinder and wisp concepts.
 - [MakeHuman clothing guide](https://static.makehumancommunity.org/assets/creatingassets/makeclothes/clothes.html) — body-derived clothing fitting.
 - [Costumy](https://github.com/cdrinmatane/Costumy) — pattern-to-garment research, not a default dependency.
