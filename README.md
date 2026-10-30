@@ -1,61 +1,66 @@
 # AI 3D Character Creator
 
-An AI-agent skill and Blender fallback for creating **real, editable 3D characters**. For high-quality image-to-3D work, this project can drive a separate free, local AI pipeline through MCP instead of pretending a few Blender primitives are equivalent to a trained 3D model.
+A universal low-poly modeling skill and Blender code toolkit. It is designed to work on modest PCs by default: an AI plans the shape and writes deterministic Blender Python, while Blender builds the actual mesh locally. No local neural image-to-3D model is required.
 
-## Recommended engine: Effigy (free, local, open source)
+## Default target: modest hardware
 
-For reference-driven characters like a front/side/back turnaround sheet, use [Effigy](https://github.com/SifuInTheShell/Effigy) as the primary generation backend.
+The baseline target is an 11th-gen Intel Core i3, 8 GB RAM, and Intel integrated graphics.
 
-- Effigy is MIT-licensed application code and runs locally/offline. No paid cloud, generation credits, subscription, or API key is required.
-- It exposes its workflow to coding agents through an MCP server.
-- Its pipeline includes image/turnaround input, 3D generation, mesh repair, triangle or quad remeshing, UV unwrap, PBR texture baking, automatic rig fitting/skinning, validation, and export.
-- Its multi-view Pixal3D-MV route is designed for consistent front/side/back/left turnaround views.
+- No local diffusion, TRELLIS, Pixal3D, Hunyuan3D, or large local LLM required.
+- Use direct mesh data and BMesh operations for procedural geometry.
+- Use a small number of objects, simple solid materials, flat shading, and modest previews.
+- Work in stages: silhouette blockout → important forms → topology checks → multi-view inspection → export.
 
-This repository **does not copy or bundle Effigy**. It integrates through Effigy's documented MCP interface, preserving its own licence and model notices. Follow [the local AI backend guide](docs/local-ai-backend.md) for installation, hardware checks, and the exact three-view character workflow.
+See [docs/low-spec-workflow.md](docs/low-spec-workflow.md).
 
-### Free does not mean lightweight
+## What is included
 
-Effigy runs the models on your computer. Its current Windows guide targets Windows 11, an NVIDIA RTX GPU with 16 GB VRAM (12 GB is best-effort for the Fast path), 32 GB RAM recommended, and roughly 70–160 GB of disk depending on selected model packs. The optional four-view Pixal3D model pack is about 22 GB. Do not download the model packs until you have checked that the computer has enough GPU memory, RAM, and disk space.
+- `SKILL.md`: universal low-poly workflow with hardware tiers and quality gates.
+- `references/bmesh_cheatsheet.md`: correct examples for explicit meshes, BMesh, pyramid hair, mirroring, flat shading, and materials.
+- `scripts/blender/validate_mesh.py`: structural scene checks for geometry, non-manifold edges, degenerate faces, loose vertices, triangle budgets, shading, and materials.
+- `scripts/blender/create_character.py`: an existing procedural character blockout generator.
+- `scripts/blender/validate_character.py`: validates that an exported model can be re-imported and contains geometry.
+- `scripts/validate_config.py`: JSON config validation.
+- `docs/kimi-style-fact-check.md`: fact-check of the proposed "Kimi-style" rules.
+- `docs/local-ai-backend.md`: optional Effigy backend for stronger hardware.
 
-The Effigy application is MIT-licensed, but each model has its own terms. Some model access requires a free Hugging Face account and acceptance of a royalty-free model licence; that is **not** a paid API, but it is not the same as an OSI open-source model licence. Keep the supplied attribution/licence notices with outputs. See [licensing and hardware notes](docs/local-ai-backend.md#licensing-and-costs).
+## The important distinction
 
-## What is in this repository
+A skill cannot turn every AI into Kimi or guarantee professional results. It can give different AI models a consistent plan, code templates, and validation steps. The model's visual reasoning and coding capabilities still matter.
 
-- `SKILL.md`: instructions for an AI agent to choose the strongest available local workflow, inspect results, and avoid false quality claims.
-- `scripts/blender/create_character.py`: a deterministic procedural Blender blockout/fallback. It is useful for simple stylized placeholders, **not** a replacement for image-to-3D AI.
-- `scripts/blender/validate_character.py`: re-imports an export and checks for real geometry, bounds, and materials.
-- `scripts/validate_config.py`: validates JSON settings without needing Blender.
-- `configs/default_character.json` and `examples/dark_suit_purple_eyes.json`: editable fallback character specifications.
-- `docs/local-ai-backend.md`: free local AI engine setup and multi-view workflow.
-- `tests/` and `.github/workflows/tests.yml`: Python tests and continuous-integration checks.
+BMesh is useful, but it does not automatically make topology clean. The workflow combines explicit geometry, validation, and visual iteration. The fact-check explains why banning every `bpy.ops` call, every n-gon, or every model over 1,500 triangles is not technically sound.
 
-## Fallback: procedural Blender blockout
+## Quick start: procedural low-poly modeling
 
-Use this only when Effigy is unavailable or the machine cannot run its models. It creates a simple editable low-poly starting mesh from parameters; it does **not** infer anatomy or geometry from a reference image.
+Open Blender and use its Scripting workspace, or run a saved scene through Blender's background mode.
 
-Requirements: Blender 4.2+ recommended and Python 3.10+ for configuration tests.
+Check the mesh in the current scene:
+
+```bash
+blender --background character.blend --python scripts/blender/validate_mesh.py -- \
+  --report build/mesh-report.json --max-triangles 6000
+```
+
+Use `--strict-budget` only when the project has an agreed triangle cap. Use `--require-watertight` only for closed solids; open surfaces can intentionally have boundary edges.
+
+The existing configurable blockout generator can still be run as a starting point:
 
 ```bash
 blender --background --factory-startup --python scripts/blender/create_character.py -- \
   --config examples/dark_suit_purple_eyes.json \
   --outdir build/dark-suit \
-  --formats glb fbx obj \
-  --render-views
+  --formats glb
 ```
 
-Expected output includes `character.glb`, `character.fbx`, `character.obj`, `character_config.json`, `model_report.json`, and front/side/back preview PNGs.
+For reliable output quality, inspect the generated result from front, side, and back rather than assuming a successful script means a good model.
 
-Validate an export:
+## Optional high-spec AI generation
 
-```bash
-blender --background --factory-startup --python scripts/blender/validate_character.py -- \
-  --file build/dark-suit/character.glb \
-  --report build/dark-suit/validation.json
-```
+[Effigy](https://github.com/SifuInTheShell/Effigy) is documented as an optional local AI image-to-3D pipeline for stronger hardware. It is not required for the low-spec workflow. Its current guide targets Windows 11, an NVIDIA RTX GPU with 16 GB VRAM for the full character path, 32 GB RAM recommended, and 70–160 GB disk depending on the selected model packs. The four-view model pack is about 22 GB additional.
 
-The validator checks structure only. It does not certify artistic quality, topology suitability, rigging, or animation deformation.
+Do not install Effigy, TRELLIS.2, Pixal3D multi-view, or other large model packs on the baseline i3/8 GB integrated-graphics machine. See [local AI backend notes](docs/local-ai-backend.md) first.
 
-## Run checks without Blender
+## Run Python checks
 
 ```bash
 python -m compileall -q scripts tests
@@ -64,28 +69,30 @@ python scripts/validate_config.py examples/dark_suit_purple_eyes.json
 python -m unittest discover -s tests -v
 ```
 
-The GitHub Actions workflow runs these Python-side checks on Python 3.10, 3.11, and 3.12. It does not claim to have rendered a Blender model or run the optional Effigy backend.
+CI checks Python syntax and configuration tests. They do not run Blender or validate the live Blender mesh script; that requires Blender installed.
 
 ## Repository layout
 
 ```text
 SKILL.md
+references/
+  bmesh_cheatsheet.md
 configs/
 examples/
 scripts/
   validate_config.py
-  blender/create_character.py
-  blender/validate_character.py
-tests/
+  blender/
+    create_character.py
+    validate_character.py
+    validate_mesh.py
 docs/
+  low-spec-workflow.md
+  kimi-style-fact-check.md
   local-ai-backend.md
+tests/
 .github/workflows/tests.yml
 ```
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Do not vendor third-party source, model weights, or assets without checking their licence and preserving their notices.
-
 ## License
 
-This repository's code is MIT. Effigy and each model remain separate components under their own licences; no third-party model weights are bundled here. See [LICENSE](LICENSE) and [the integration notes](docs/local-ai-backend.md).
+This repository's code is MIT. Effigy and any future third-party code, checkpoints, and asset packs remain separate components under their own licences. No third-party model weights are bundled here.

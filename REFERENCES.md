@@ -1,20 +1,15 @@
 # Implementation references
 
-## Local AI generation and character pipeline
+## Blender Python API
 
-- [Effigy](https://github.com/SifuInTheShell/Effigy) — separate MIT-licensed local image-to-3D app with an MCP server for local coding agents.
-- [Effigy setup guide](https://github.com/SifuInTheShell/Effigy/blob/main/SETUP.md) — hardware, model packs, and local MCP setup.
-- [Effigy model and dependency licence manifest](https://github.com/SifuInTheShell/Effigy/blob/main/licenses.yaml) — separate terms for code, checkpoints, and clip packs.
-- [Effigy multi-view preparation](https://github.com/SifuInTheShell/Effigy/blob/main/steps/prep.py) and [multi-view generation](https://github.com/SifuInTheShell/Effigy/blob/main/steps/trellis2.py) — turnaround camera generation and Pixal3D-MV selection.
-- [Effigy MCP server](https://github.com/SifuInTheShell/Effigy/blob/main/mcp/effigy_server.py) — tools for import, steps, visual inspection, rig checks, validation, and export.
-- [Meta DINOv3 licence](https://ai.meta.com/resources/models-and-libraries/dinov3-downloads/) — royalty-free model terms and required attribution where used.
+- [Blender Python API](https://docs.blender.org/api/current/) — includes data access, operators, and the standalone BMesh module.
+- [Blender Python API quickstart source](https://github.com/blender/blender/blob/main/doc/python_api/rst/info_quickstart.rst) — context and data access notes.
+- [BMesh API](https://docs.blender.org/api/current/bmesh.html) — BMesh operations and data structures.
+- [Blender mesh data API](https://docs.blender.org/api/current/bpy.types.Mesh.html) — mesh data, polygons, and loop triangles.
 
-## Blender and interchange formats
+## Kimi public material
 
-The fallback generator targets Blender's Python API. Consult the documentation for the exact Blender version installed locally, since operator parameters can change between versions.
+- [Kimi K3.1 Pro announcement](https://www.kimi.ai/blog/kimi-k3-1-pro) — public description of 3D creation, parametric modeling, and BenchCAD results.
+- [Kimi 3D Make overview](https://www.kimi.com/en/help/3d-make/3d-make-overview) — product description and model attribution.
 
-- [Blender Python API 4.5 — `bpy.ops.wm.obj_export`](https://docs.blender.org/api/4.5/bpy.ops.wm.html)
-- [Blender Python API — glTF 2.0 exporter](https://docs.blender.org/api/3.0/bpy.ops.export_scene.html)
-- [glTF 2.0 specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html)
-
-The references above describe relevant interfaces and format behavior; they do not imply the full project was executed against every Blender version or that the optional Effigy backend has been run in this environment.
+These sources do not establish Kimi's internal Blender implementation. The workflow in this repository is our own engineering recipe, not a verified reverse-engineering of Kimi.

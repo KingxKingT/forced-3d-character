@@ -1,63 +1,114 @@
 ---
-name: ai-3d-character-creator
-description: Create, customize, inspect, and export real 3D characters from reference images. Prefer the free local Effigy image-to-3D pipeline through MCP for high-quality meshes; use the included procedural Blender builder only as a fallback or blockout.
+name: universal-lowpoly-3d
+description: >
+  Build clean stylized low-poly 3D characters, props, and scenes in Blender using deterministic Python geometry.
+  Use for reference-driven Blender modeling, mesh generation, cleanup, low-poly topology, and export.
+  Prefer direct mesh data and BMesh over context-sensitive primitive-add operators. Follow the low-spec workflow
+  by default; use neural image-to-3D only when the user's hardware can actually run it.
 ---
 
-# AI 3D Character Creator
+# Universal Low-Poly 3D Skill
 
-Use this skill for real editable character meshes, especially reference-driven stylized game characters. The goal is a usable model, not just an image prompt or a rendered concept.
+Act as a technical artist who plans geometry, writes reproducible Blender Python, validates the mesh, and iterates against the visual reference. The target is a deliberate, clean model—not merely a script that runs.
 
-## Choose the right engine first
+## First choose the correct hardware tier
 
-**Preferred for image-to-3D: Effigy (local, free, MIT application code).** If the Effigy MCP tools are connected, use them for reference-driven generation, cleanup, remeshing, UVs, PBR baking, rigging, validation, and export. Do not use Effigy Cloud, paid APIs, credits, or subscription services. Effigy is a separate project and is not bundled here.
+### Tier A — Low-spec, default
 
-Read [docs/local-ai-backend.md](docs/local-ai-backend.md) for hardware, licence, and setup requirements. Confirm the user's machine can run the selected model before asking it to download large model packs. Never trigger a model download without explaining its size and asking the user first.
+Use this tier for a PC such as an 11th-gen Intel Core i3, 8 GB system RAM, and Intel integrated graphics.
 
-**Fallback: included Blender script.** The procedural generator in `scripts/blender/create_character.py` makes a basic editable blockout from boxes, cones, and low-poly spheres. Use it only if Effigy is not installed/available or the task explicitly asks for a quick blockout. Do not present its output as comparable to a trained image-to-3D system.
+- Do not attempt local diffusion, TRELLIS, Pixal3D, Hunyuan3D, Effigy, or other large neural image-to-3D model inference on this tier.
+- Do not ask the user to download multi-gigabyte model weights.
+- Do not require a local LLM. The user can use an AI chat/model they already have to write or review the Blender script; Blender performs the geometry work locally.
+- Build geometry procedurally with explicit vertices/faces or BMesh operations. Use a small number of mesh objects, simple materials, and flat shading.
+- Start with a low-detail blockout, then spend geometry only where the reference needs it: head silhouette, hair shape, hands, jacket/lapels, and shoes.
+- Avoid large texture maps, heavy modifiers, simulations, dense subdivision, high-sample renders, and multiple simultaneous Blender instances.
+- Keep previews small (for example 512 px) and render only when needed. Prefer material colours over texture-heavy workflows.
+- If Blender becomes slow, reduce object count and detail, close other applications, and save often.
 
-## Preferred workflow with Effigy MCP
+This is still real 3D modeling. It is not neural image-to-3D inference; the AI is translating the reference into a geometric plan and code.
 
-Effigy exposes tools such as `import_file`, `run_step`, `job_status`, `look`, `fit_check`, `validate`, and `export`. Use Effigy's own `describe_steps` for current parameters and its `effigy://guide` resource for full instructions; do not guess a tool argument if the installed version describes it differently.
+### Tier B — Strong hardware, optional
 
-### For a three-view turnaround sheet
+Only propose this when the user explicitly has a suitable machine and enough free disk. Effigy is an optional separate backend for local AI image-to-3D, multi-view generation, retopology, texturing, rigging, and export. Read [docs/local-ai-backend.md](docs/local-ai-backend.md) before recommending installation. Its current documented full character path targets an NVIDIA RTX GPU with 16 GB VRAM, 32 GB RAM recommended, and roughly 70–160 GB disk depending on model packs; multi-view weights add about 22 GB. It is not suitable for the Tier A machine above.
 
-The reference should contain the **same character, same pose, same scale, and same camera distance** in each panel. For a horizontal three-panel sheet ordered front, character-right profile, back:
+Never make the high-spec AI backend a prerequisite for the base skill.
 
-1. Call `import_file(path=<absolute_path_to_reference_sheet>)`. It imports the picture and creates a prepared/cut-out version.
-2. Call `run_step(asset_id, parent=<prepared_version>, step="prep", params={"op":"views","views":["front","right","back"]})`. Effigy splits the sheet into equal-width columns, creates the camera transforms, and checks that the character heights agree. If the panels are not equal-width, use separate cropped images and Effigy's `sources` option instead of allowing a bad split.
-3. Call `run_step(asset_id, parent=<views_version>, step="trellis2", params={"weights":"faithful","multiview":true,"pipeline_type":"1024_cascade","steps":12,"texture_size":2048})`. This selects the multi-view Pixal3D route when the optional multi-view model pack is installed. Check the run result and the actual model variant in its metadata.
-4. Use `look(asset_id, version)` to inspect the mesh from multiple angles before continuing. Compare the silhouette, head/body proportions, suit shape, hair mass, hands, and back against the reference. If wrong, try another seed or correct the source images; do not hide structural errors with textures.
-5. Continue from the chosen model version: `clean` → `remesh` → `uv` → `bake`. For a stylized game character, try a moderate face budget first (for example 15k–25k); choose `quad` when editability/deformation matters, or `tri` for simpler game export. Check the remesh report and do not discard distinctive details.
-6. Optionally run Effigy's `project` head/front pass when a sharper face from the reference is needed. Inspect the result; image projection can misalign if the camera or geometry is wrong.
-7. For a rig, run `rig_fit` with the `mixamo52` template, then `fit_check`, and only then `rig_skin`. Read its QA output and fix markers when joints sit outside the mesh or deformation checks fail. Use Effigy's own step documentation for the skinning engine choices.
-8. Run `validate`, fix all failures, then `export` to the requested profile (`godot`, `unreal`, `unity`, `web`, or `obj`). Keep `CREDITS.txt` and `LICENSES.json` beside the export.
+## Important truth about "Kimi-style" modeling
 
-If a call returns `status="running"`, poll `job_status(job_id)` until it is done. Effigy allows one heavy GPU job at a time; do not start concurrent generation/texture jobs. Each step writes a new version, so preserve the good parent and branch from it for experiments.
+This skill borrows a disciplined procedural workflow sometimes described as "Kimi-style." It does not reproduce Kimi's private implementation or guarantee that every AI model will perform equally well. A skill can provide constraints, templates, and test gates; it cannot add capabilities that the selected AI model does not have.
 
-### Important rule for multi-view references
+## The geometry rules
 
-Do **not** run the single-image `canon` re-pose step after preparing multi-view cameras: changing only the front view breaks the agreement between front/side/back. If an A-pose is essential for rigging, prepare a matching A-pose image for every view first, or generate from the aligned reference and correct the rig markers in Effigy's rig editor. A T-pose turnaround can be used for shape generation, but rig-fit quality must be checked rather than assumed.
+1. **Prefer data APIs for geometry.** Use `Mesh.from_pydata(vertices, edges, faces)` for explicit mesh data and BMesh for topology editing or procedural mesh operations. Avoid `bpy.ops.mesh.primitive_*_add` in reusable/headless generation code because it depends on Blender's active context and selection.
+2. **Do not ban all operators.** Blender operators remain appropriate for operations that have no practical data-API equivalent, such as some import/export or scene operations. Make the context explicit, check the returned status, and test the target Blender version.
+3. **BMesh is not a topology guarantee.** It can create, edit, and inspect topology; bad coordinates, duplicated vertices, reversed faces, non-manifold edges, and self-intersections are still possible.
+4. **Fail loudly on bad input.** Validate face indices, repeated indices, finite coordinates, face sizes, and duplicate/degenerate geometry. Do not catch and silently ignore face-construction errors.
+5. **Flat shading is a deliberate style choice.** For this low-poly target set `polygon.use_smooth = False` directly on every generated polygon. Do not invoke a context-sensitive shading operator just to set a per-face property.
+6. **Use symmetry intentionally.** A Mirror modifier needs a correctly built half-mesh with its center seam on X=0. Keep centerline vertices on the seam, avoid duplicate overlapping halves, and inspect the seam after mirroring.
+7. **Build hair as deliberate locks.** Use tapered low-poly volumes, closed pyramids, or controlled ribbons. Never collapse every extruded vertex to one location; move only the intended cap vertices.
+8. **Use topology appropriate to the model.** Quads are useful for edge flow and deformation; triangles are normal for real-time export; planar n-gons can be fine for static surfaces but need checking and triangulation behavior at export. Do not reject every n-gon blindly.
+9. **No universal triangle cap.** A simple prop and a full-body hero character have different needs. Pick a budget from the target platform, camera distance, silhouette, deformation, and visual importance. Report the actual triangle count and let the user choose the trade-off.
+10. **Materials stay simple by default.** Use a small, intentional palette of solid materials before adding image textures. The reference's colour blocking and silhouette should carry the style.
 
-## Reference interpretation
+## Required workflow
 
-Record what is visible and what is inferred. For a stylized dark-suited character, describe the silhouette, shoulder/waist ratio, head shape, facial landmarks, solid hair locks, jacket/lapel geometry, shirt/tie, trousers, shoes, palette, and any gold/violet accents. Preserve the user's reference design rather than inventing unrelated accessories.
+### Step 1 — Read the reference
 
-For best image-to-3D conditioning, use one isolated character per view, a plain background, soft even 3D-style lighting, visible hands/feet, clear face, and consistent scale between views. Avoid panels with different poses, camera angles, crop sizes, or character heights; multi-view reconstruction fuses them into one shape.
+Write down only observable facts first: view directions, pose, silhouette, body proportions, outfit layers, hairstyle mass, face landmarks, palette, and accessories. Label uncertain details as assumptions.
 
-## Workflow with the procedural fallback
+For a multi-view reference, confirm all views show the same character, pose, scale, and camera distance. Do not combine mismatched poses or differently scaled images.
 
-1. Interpret style, body type, pose, outfit, palette, hair, eyes, accessories, target engine, and output formats.
-2. Copy `configs/default_character.json` and edit values. The sample `examples/dark_suit_purple_eyes.json` is a style reference, not a learned model.
-3. Run Blender's `scripts/blender/create_character.py` with the selected config.
-4. Inspect front/side/back renders for silhouette, fingers, intersections, and face placement.
-5. Run `scripts/blender/validate_character.py` and inspect its report.
-6. State clearly that this is a procedural blockout with no trained image-to-3D inference, armature, or skin weights.
+### Step 2 — Make a geometric blueprint
 
-## Done means
+Set world axes and scale before creating geometry. This skill uses Z-up and character-facing +Y by default unless the project requires another convention.
 
-- The chosen backend actually completed its geometry generation.
-- The model was inspected from front, side, and back; do not claim a successful visual match based on file existence alone.
-- Every requested export exists and is non-empty.
-- Rigging claims are supported by a successful skeleton fit, skinning QA, and deformation checks.
-- Model licences, attribution notices, and output provenance are preserved.
-- Known limitations are stated honestly. Never claim a Blender render, export, or validation passed unless it completed and its output was inspected.
+Make a parts list and vertex/face budget. Identify which components are mirrored and which are asymmetric. Keep the large shapes readable before adding small detail.
+
+### Step 3 — Build the blockout
+
+Create a deterministic Blender Python script. Prefer helper functions such as:
+
+- `create_mesh_from_pydata(name, vertices, faces)`
+- `create_bmesh_object(name, build_callback)`
+- `make_material(name, hex_color)`
+- `add_mirrored_half_mesh(...)`
+- `validate_scene_meshes(...)`
+
+Keep geometry coordinates and face lists explicit. Use `references/bmesh_cheatsheet.md` for tested patterns and API reminders.
+
+### Step 4 — Validate before decorating
+
+Run `scripts/blender/validate_mesh.py` against the scene. Fix invalid indices, zero-area faces, non-finite coordinates, non-manifold edges, loose vertices, and accidental shading before adding decoration. Treat open boundaries and n-gons according to whether the model is intentionally open or closed.
+
+A passing validator is not proof of artistic quality. It is only a structural gate.
+
+### Step 5 — Inspect from multiple views
+
+Inspect front, side, and back. Compare the silhouette and proportions to the reference. Check hands, thumb direction, fingers, shoulder transitions, neck, hair volume, lapels, trousers, and shoes. Correct the geometry—not merely the material—when the shape is wrong.
+
+Use a rendered preview only when it is practical for the machine. A script that completes is not automatically a visually good model.
+
+### Step 6 — Optimize and export
+
+Apply the requested triangle budget and keep a high-detail working copy if needed. Use the target format: GLB for portable static or skinned assets, FBX for workflows that require it, and OBJ for simple geometry/material transfer. Confirm exporter completion and inspect the exported file in the intended app.
+
+### Step 7 — Report honestly
+
+State the actual triangle count, object count, material count, warnings, Blender version, output paths, and whether the model was visually inspected. Never claim "game-ready," "perfect topology," or "animation-ready" without the corresponding checks. The included generator does not currently create a production rig or skin weights.
+
+## Prompting and self-review
+
+Use the user's visual reference as the authority. Do not invent details to fill every surface. Prefer a few clear forms over lots of noisy micro-geometry.
+
+Before finishing, ask:
+
+- Does the silhouette read correctly from all supplied views?
+- Are the left/right parts truly mirrored where intended?
+- Are any faces missing, inverted, duplicated, or degenerate?
+- Are there loose vertices or edges?
+- Is the triangle count appropriate for the target use?
+- Are flat-shaded materials consistent with the reference?
+- Did the export actually complete?
+
+If a test fails, identify the exact geometry or script change and rerun the validator.
