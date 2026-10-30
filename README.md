@@ -1,38 +1,39 @@
 # AI 3D Character Creator
 
-A procedural Blender project and agent skill for creating **real, editable low-poly 3D character meshes** from structured character specifications. It is intended for stylized game characters—especially a dark-suited character with black hair, violet eyes, and subtle gold details—not just image prompts.
+An AI-agent skill and Blender fallback for creating **real, editable 3D characters**. For high-quality image-to-3D work, this project can drive a separate free, local AI pipeline through MCP instead of pretending a few Blender primitives are equivalent to a trained 3D model.
 
-## What is included
+## Recommended engine: Effigy (free, local, open source)
 
-- `SKILL.md`: instructions for an AI agent to plan, generate, inspect, validate, and iterate on character assets.
-- `scripts/blender/create_character.py`: procedural Blender mesh/material creation, export, and front/side/back preview rendering.
+For reference-driven characters like a front/side/back turnaround sheet, use [Effigy](https://github.com/SifuInTheShell/Effigy) as the primary generation backend.
+
+- Effigy is MIT-licensed application code and runs locally/offline. No paid cloud, generation credits, subscription, or API key is required.
+- It exposes its workflow to coding agents through an MCP server.
+- Its pipeline includes image/turnaround input, 3D generation, mesh repair, triangle or quad remeshing, UV unwrap, PBR texture baking, automatic rig fitting/skinning, validation, and export.
+- Its multi-view Pixal3D-MV route is designed for consistent front/side/back/left turnaround views.
+
+This repository **does not copy or bundle Effigy**. It integrates through Effigy's documented MCP interface, preserving its own licence and model notices. Follow [the local AI backend guide](docs/local-ai-backend.md) for installation, hardware checks, and the exact three-view character workflow.
+
+### Free does not mean lightweight
+
+Effigy runs the models on your computer. Its current Windows guide targets Windows 11, an NVIDIA RTX GPU with 16 GB VRAM (12 GB is best-effort for the Fast path), 32 GB RAM recommended, and roughly 70–160 GB of disk depending on selected model packs. The optional four-view Pixal3D model pack is about 22 GB. Do not download the model packs until you have checked that the computer has enough GPU memory, RAM, and disk space.
+
+The Effigy application is MIT-licensed, but each model has its own terms. Some model access requires a free Hugging Face account and acceptance of a royalty-free model licence; that is **not** a paid API, but it is not the same as an OSI open-source model licence. Keep the supplied attribution/licence notices with outputs. See [licensing and hardware notes](docs/local-ai-backend.md#licensing-and-costs).
+
+## What is in this repository
+
+- `SKILL.md`: instructions for an AI agent to choose the strongest available local workflow, inspect results, and avoid false quality claims.
+- `scripts/blender/create_character.py`: a deterministic procedural Blender blockout/fallback. It is useful for simple stylized placeholders, **not** a replacement for image-to-3D AI.
 - `scripts/blender/validate_character.py`: re-imports an export and checks for real geometry, bounds, and materials.
 - `scripts/validate_config.py`: validates JSON settings without needing Blender.
-- `configs/default_character.json` and `examples/dark_suit_purple_eyes.json`: editable character specifications.
+- `configs/default_character.json` and `examples/dark_suit_purple_eyes.json`: editable fallback character specifications.
+- `docs/local-ai-backend.md`: free local AI engine setup and multi-view workflow.
 - `tests/` and `.github/workflows/tests.yml`: Python tests and continuous-integration checks.
-- `docs/pipeline.md`: workflow notes, settings, and known constraints.
 
-## Important capability boundary
+## Fallback: procedural Blender blockout
 
-This is a deterministic procedural model builder, **not** a neural text-to-3D model. It creates a customizable low-poly starting character from Blender geometry. An AI agent can translate a reference into a configuration and iterate on renders, but automated geometry still needs visual review.
+Use this only when Effigy is unavailable or the machine cannot run its models. It creates a simple editable low-poly starting mesh from parameters; it does **not** infer anatomy or geometry from a reference image.
 
-The character is **not rigged** and has no armature, skin weights, facial rig, or hand-authored production UV workflow. Do not call it animation-ready or production-ready. The Python tests do not prove that Blender exports or renders; those checks need a machine with Blender installed.
-
-## Requirements
-
-- Blender 4.2+ recommended.
-- Python 3.10+ for configuration validation and unit tests.
-- Optional: a GLB/GLTF viewer or game engine for inspecting exported assets.
-
-Check Blender availability:
-
-```bash
-blender --version
-```
-
-## Quick start
-
-Run these commands from the repository root:
+Requirements: Blender 4.2+ recommended and Python 3.10+ for configuration tests.
 
 ```bash
 blender --background --factory-startup --python scripts/blender/create_character.py -- \
@@ -42,24 +43,9 @@ blender --background --factory-startup --python scripts/blender/create_character
   --render-views
 ```
 
-Expected output:
+Expected output includes `character.glb`, `character.fbx`, `character.obj`, `character_config.json`, `model_report.json`, and front/side/back preview PNGs.
 
-```text
-build/dark-suit/
-├── character.glb
-├── character.fbx
-├── character.obj
-├── character.mtl
-├── character_config.json
-├── model_report.json
-├── preview_front.png
-├── preview_side.png
-└── preview_back.png
-```
-
-The available exporters depend on your Blender installation. The script exits with an error if a requested export does not complete or produces an empty file.
-
-Validate the generated GLB:
+Validate an export:
 
 ```bash
 blender --background --factory-startup --python scripts/blender/validate_character.py -- \
@@ -67,17 +53,7 @@ blender --background --factory-startup --python scripts/blender/validate_charact
   --report build/dark-suit/validation.json
 ```
 
-This validates import and basic structure; it does not certify artistic quality, topology, UVs, rigging, or animation deformation.
-
-## Configure a character
-
-1. Copy `configs/default_character.json` or edit `examples/dark_suit_purple_eyes.json`.
-2. Change supported palette colors, overall scale, hair style, facial feature flags, outfit details, render resolution, and export formats.
-3. Generate to a new output directory so earlier results are preserved.
-4. Inspect the front, side, and back previews. Pay special attention to hands, silhouette, clothing intersections, and facial placement.
-5. If a required style, pose, or feature is not supported by the current generator, extend the code and add tests rather than setting an option the generator ignores.
-
-Supported values are validated before generation. Current style is `low_poly_stylized`, current pose is `t_pose`, supported hair styles are `side_swept` and `short`, and output formats are GLB, GLTF, FBX, and OBJ.
+The validator checks structure only. It does not certify artistic quality, topology suitability, rigging, or animation deformation.
 
 ## Run checks without Blender
 
@@ -88,7 +64,7 @@ python scripts/validate_config.py examples/dark_suit_purple_eyes.json
 python -m unittest discover -s tests -v
 ```
 
-The GitHub Actions workflow runs these Python-side checks on Python 3.10, 3.11, and 3.12. It does not claim to have rendered a Blender model.
+The GitHub Actions workflow runs these Python-side checks on Python 3.10, 3.11, and 3.12. It does not claim to have rendered a Blender model or run the optional Effigy backend.
 
 ## Repository layout
 
@@ -102,13 +78,14 @@ scripts/
   blender/validate_character.py
 tests/
 docs/
+  local-ai-backend.md
 .github/workflows/tests.yml
 ```
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for test expectations and Blender validation guidance.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Do not vendor third-party source, model weights, or assets without checking their licence and preserving their notices.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+This repository's code is MIT. Effigy and each model remain separate components under their own licences; no third-party model weights are bundled here. See [LICENSE](LICENSE) and [the integration notes](docs/local-ai-backend.md).

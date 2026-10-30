@@ -2,23 +2,28 @@
 
 ## Overview
 
-The project uses Blender as the geometry and export engine. A JSON file describes a character, and `scripts/blender/create_character.py` builds meshes, assigns materials, configures lights and orthographic cameras, writes model metadata, and exports the requested formats.
+This repository has two levels of generation:
 
-## Configuration fields
+1. **Preferred high-quality path:** connect a local coding agent to [Effigy](https://github.com/SifuInTheShell/Effigy) through its MCP server. Effigy runs trained image-to-3D models plus mesh cleanup, remeshing, UVs, PBR baking, rigging QA, and export locally. See [the free local AI backend guide](local-ai-backend.md).
+2. **Fallback blockout:** `scripts/blender/create_character.py` uses Blender primitives and JSON settings to create a simple editable placeholder. It is not neural image-to-3D and should not be presented as a high-quality reconstruction of a reference image.
+
+The fallback JSON describes a character, and the Blender script builds meshes, assigns materials, configures lights and orthographic cameras, writes model metadata, and exports the requested formats.
+
+## Fallback configuration fields
 
 - `name`: descriptive character name used in object and report names.
 - `scale`: global scale multiplier (0.1–5.0).
 - `style`: descriptive style label; the current builder targets `low_poly_stylized`.
 - `pose`: currently supports a neutral T-pose-style arrangement.
 - `palette`: named six-digit hex colors for skin, hair, suit, shirt, tie, eyes, eye whites, shoes, and gold trim.
-- `features`: hair style and optional facial/outfit accents. Unsupported feature strings fall back to safe defaults and are noted in the report.
+- `features`: hair style and optional facial/outfit accents.
 - `outfit`: enables clothing layers such as lapels, tie, shirt, cuffs, and jacket details.
-- `render`: preview resolution, Cycles/Eevee sample setting, and background transparency.
+- `render`: preview resolution, Eevee samples, and background transparency.
 - `exports`: list containing any of `glb`, `gltf`, `fbx`, `obj`.
 
 Run `python scripts/validate_config.py examples/dark_suit_purple_eyes.json` before invoking Blender to catch malformed colors or options.
 
-## Command line
+## Fallback command line
 
 The Blender script arguments must appear after `--`:
 
@@ -34,11 +39,11 @@ blender --background --factory-startup --python scripts/blender/create_character
 
 ## Output and validation
 
-The generator saves a copy of the JSON, model metadata, exported asset files, and requested renders under the output directory. The Blender validator imports the selected export into a clean scene and records whether geometry, non-zero bounds, and materials were found.
+The fallback generator saves a copy of the JSON, model metadata, exported asset files, and requested renders under the output directory. The Blender validator imports the selected export into a clean scene and records whether geometry, non-zero bounds, and materials were found.
 
-The validation report proves only that certain structural checks passed. It does not prove attractive proportions, correct fingers, good deformation, UV completeness, topology suitability, or legal use of referenced imagery. Review the preview images and open the export in the intended runtime.
+The validation report proves only that structural checks passed. It does not prove attractive proportions, correct fingers, good deformation, UV completeness, topology suitability, or legal use of referenced imagery. Review the preview images and open the export in the intended runtime.
 
-## Known limitations
+## Known limitations of the fallback
 
 - No neural reconstruction from text or image.
 - No armature, skin weights, facial rig, animation clips, or retargeting.
