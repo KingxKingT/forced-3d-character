@@ -13,7 +13,7 @@ REQUIRED_PALETTE = {"skin", "hair", "suit", "shirt", "tie", "eyes", "eyewhite", 
 VALID_FORMATS = {"glb", "gltf", "fbx", "obj"}
 VALID_STYLES = {"low_poly_stylized"}
 VALID_POSES = {"t_pose"}
-VALID_HAIR_STYLES = {"side_swept", "short"}
+VALID_HAIR_STYLES = {"manhwa_layered", "side_swept", "short"}
 BOOLEAN_FEATURES = {
     "beard", "eyebrows", "ears", "nose", "mouth", "gold_buttons", "pocket_square"
 }
