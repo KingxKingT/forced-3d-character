@@ -66,6 +66,11 @@ class ConfigValidationTests(unittest.TestCase):
         data["features"]["beard"] = "false"
         self.assertTrue(any("features.beard must be true or false" in error for error in validate_config(data)))
 
+    def test_manhwa_layered_hair_style_is_supported(self):
+        data = json.loads((ROOT / "examples/dark_suit_purple_eyes.json").read_text(encoding="utf-8"))
+        data["features"]["hair_style"] = "manhwa_layered"
+        self.assertEqual(validate_config(data), [])
+
     def test_unsupported_hair_style_is_rejected(self):
         data = json.loads((ROOT / "configs/default_character.json").read_text(encoding="utf-8"))
         data["features"]["hair_style"] = "long_braids"
