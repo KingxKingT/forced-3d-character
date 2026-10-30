@@ -64,6 +64,8 @@ def hair_card_mesh(control_points: Sequence[Sequence[float]], *, face_hint: Vec3
             widths.append(points[i][3]*(1-t)+points[i+1][3]*t)
             depths.append(points[i][4]*(1-t)+points[i+1][4]*t)
     widths.append(points[-1][3]); depths.append(points[-1][4])
+    if len(face_hint) != 3:
+        raise ValueError("face_hint must be an XYZ vector")
     hint=_normalize(tuple(float(v) for v in face_hint),(0.0,1.0,0.0))
     rings=[]; previous_width=None
     for i,center in enumerate(centers):
@@ -87,7 +89,7 @@ def hair_card_mesh(control_points: Sequence[Sequence[float]], *, face_hint: Vec3
         hw=widths[i]*0.5; hd=depths[i]*0.5
         rings.append([
             _add(_add(center,_mul(width_axis,hw)),_mul(depth_axis,hd)),
-            _add(_sub(center,_mul(width_axis,hw)),_mul(depth_axis,-hd)),
+            _add(_sub(center,_mul(width_axis,hw)),_mul(depth_axis,hd)),
             _sub(_sub(center,_mul(width_axis,hw)),_mul(depth_axis,hd)),
             _add(_sub(center,_mul(width_axis,-hw)),_mul(depth_axis,-hd)),
         ])
