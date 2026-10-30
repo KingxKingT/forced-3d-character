@@ -31,7 +31,7 @@ create_character.py -------------- semantic character assembly, scene, export
 
 ## Why pure geometry matters
 
-`geometry_core.py` accepts and returns ordinary Python arrays. Unit tests can prove ring correspondence, cap winding, sweep sampling, stable frames, duplicate detection, and component metrics in milliseconds without starting Blender. This is stronger than reading source code and asserting that a preferred API name appears. It also lets an AI agent iterate on geometry logic with a fast feedback loop.
+`geometry_core.py` accepts and returns ordinary Python arrays. `hair_cards.py` applies the same pure-Python boundary to CHARM-inspired hair guides. Unit tests can prove ring correspondence, cap winding, sweep sampling, stable frames, duplicate detection, and component metrics in milliseconds without starting Blender. This is stronger than reading source code and asserting that a preferred API name appears. It also lets an AI agent iterate on geometry logic with a fast feedback loop.
 
 The pure layer is not a full geometry kernel. It deliberately implements a small, useful set of operations rather than recreating Blender. BMesh remains appropriate for connectivity editing and selected procedural primitives; Blender remains responsible for objects, modifiers, materials, rendering, import, and export.
 
