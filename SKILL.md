@@ -1,114 +1,148 @@
 ---
 name: universal-lowpoly-3d
 description: >
-  Build clean stylized low-poly 3D characters, props, and scenes in Blender using deterministic Python geometry.
-  Use for reference-driven Blender modeling, mesh generation, cleanup, low-poly topology, and export.
-  Prefer direct mesh data and BMesh over context-sensitive primitive-add operators. Follow the low-spec workflow
-  by default; use neural image-to-3D only when the user's hardware can actually run it.
+  Plan, build, inspect, validate, and export real editable low-poly characters and props locally in Blender.
+  Use for reference-driven modelling, deterministic Blender Python, BMesh, procedural lofts/sweeps, mesh validation,
+  multi-view visual iteration, and low-spec character workflows. Blender performs geometry generation locally;
+  no cloud 3D generator, paid API, large local model, or dedicated GPU is required by the default path.
 ---
 
 # Universal Low-Poly 3D Skill
 
-Act as a technical artist who plans geometry, writes reproducible Blender Python, validates the mesh, and iterates against the visual reference. The target is a deliberate, clean model—not merely a script that runs.
+Act as a technical artist, not a script-completion machine. Translate observable requirements into a geometric plan, write deterministic local Blender Python, inspect actual geometry and renders, and report remaining defects honestly. A prompt or this skill cannot make every AI model equally capable: visual reasoning, coding ability, tool access, and the available reference still constrain the result.
 
-## First choose the correct hardware tier
+## Non-negotiable default constraints
 
-### Tier A — Low-spec, default
+The baseline is an 11th-generation Intel Core i3, 8 GB RAM, Intel integrated graphics, and no dedicated GPU.
 
-Use this tier for a PC such as an 11th-gen Intel Core i3, 8 GB system RAM, and Intel integrated graphics.
+- No paid APIs, subscriptions, generation credits, or cloud-based 3D-generation dependency is introduced by this repository.
+- No large local AI models, diffusion models, GPU-heavy image-to-3D models, or multi-gigabyte weight downloads are required.
+- Use Blender and lightweight Python tools. The actual mesh generation must run locally in Blender.
+- An external assistant may reason and write Blender Python through a service the user already has; that assistant is not the geometry engine.
+- A stronger local/neural workflow is optional and must never become a prerequisite. Check current hardware and licences before recommending one.
+- Do not start large downloads automatically. Do not claim to have run Blender, rendered, or inspected a model unless that actually happened.
 
-- Do not attempt local diffusion, TRELLIS, Pixal3D, Hunyuan3D, Effigy, or other large neural image-to-3D model inference on this tier.
-- Do not ask the user to download multi-gigabyte model weights.
-- Do not require a local LLM. The user can use an AI chat/model they already have to write or review the Blender script; Blender performs the geometry work locally.
-- Build geometry procedurally with explicit vertices/faces or BMesh operations. Use a small number of mesh objects, simple materials, and flat shading.
-- Start with a low-detail blockout, then spend geometry only where the reference needs it: head silhouette, hair shape, hands, jacket/lapels, and shoes.
-- Avoid large texture maps, heavy modifiers, simulations, dense subdivision, high-sample renders, and multiple simultaneous Blender instances.
-- Keep previews small (for example 512 px) and render only when needed. Prefer material colours over texture-heavy workflows.
-- If Blender becomes slow, reduce object count and detail, close other applications, and save often.
+## 1. Establish the request and evidence
 
-This is still real 3D modeling. It is not neural image-to-3D inference; the AI is translating the reference into a geometric plan and code.
+Record the intended use (static render, game asset, further sculpting, or animation), target style, pose, output formats, triangle/draw-call priorities, and Blender version. Separate these evidence classes:
 
-### Tier B — Strong hardware, optional
+| Evidence | What to do |
+|---|---|
+| Supplied image/reference | Describe only visible silhouette, landmarks, layers, colours, and camera views; mark occluded details as assumptions. |
+| Text-only request | Convert adjectives into measurable forms and proportions; do not pretend an image was supplied. |
+| Multiple views | Confirm identity, pose, scale, and camera consistency before combining information. |
+| Missing or unreadable reference | Continue only with an explicit text-based assumption list, or request the reference if resemblance is essential. |
 
-Only propose this when the user explicitly has a suitable machine and enough free disk. Effigy is an optional separate backend for local AI image-to-3D, multi-view generation, retopology, texturing, rigging, and export. Read [docs/local-ai-backend.md](docs/local-ai-backend.md) before recommending installation. Its current documented full character path targets an NVIDIA RTX GPU with 16 GB VRAM, 32 GB RAM recommended, and roughly 70–160 GB disk depending on model packs; multi-view weights add about 22 GB. It is not suitable for the Tier A machine above.
+Never claim reference-image comparison when no reference image was available. “Attractive,” “anime,” and “professional” are not geometric specifications; resolve them into head/body ratios, face planes, hair masses, clothing shapes, and silhouette criteria.
 
-Never make the high-spec AI backend a prerequisite for the base skill.
+## 2. Write a geometric blueprint before code
 
-## Important truth about "Kimi-style" modeling
+Use a documented right-handed coordinate system. This project uses **Z-up and character-facing +Y**, with left/right mirrored across X=0. Choose real-world scale and a ground plane. Specify:
 
-This skill borrows a disciplined procedural workflow sometimes described as "Kimi-style." It does not reproduce Kimi's private implementation or guarantee that every AI model will perform equally well. A skill can provide constraints, templates, and test gates; it cannot add capabilities that the selected AI model does not have.
+1. Overall height, head-to-body ratio, shoulder/waist/hip widths, limb lengths, hand and foot sizes.
+2. A semantic part manifest such as `head`, `face`, `hair`, `clothing`, `hands`, `legs`, and `shoes`.
+3. Symmetric versus intentionally asymmetric components.
+4. Closed solid components versus intentional open surfaces; these have different validation rules.
+5. Topology needs. Static multi-part geometry is not automatically suitable for deformation.
+6. A project-specific triangle and object budget, with extra density reserved for silhouette-critical areas.
+7. Camera views and acceptance criteria before detail work begins.
 
-## The geometry rules
+Do not rewrite a working project merely to appear sophisticated. Preserve stable entry points and configuration contracts, isolate reusable algorithms, and replace the weakest visual components first.
 
-1. **Prefer data APIs for geometry.** Use `Mesh.from_pydata(vertices, edges, faces)` for explicit mesh data and BMesh for topology editing or procedural mesh operations. Avoid `bpy.ops.mesh.primitive_*_add` in reusable/headless generation code because it depends on Blender's active context and selection.
-2. **Do not ban all operators.** Blender operators remain appropriate for operations that have no practical data-API equivalent, such as some import/export or scene operations. Make the context explicit, check the returned status, and test the target Blender version.
-3. **BMesh is not a topology guarantee.** It can create, edit, and inspect topology; bad coordinates, duplicated vertices, reversed faces, non-manifold edges, and self-intersections are still possible.
-4. **Fail loudly on bad input.** Validate face indices, repeated indices, finite coordinates, face sizes, and duplicate/degenerate geometry. Do not catch and silently ignore face-construction errors.
-5. **Flat shading is a deliberate style choice.** For this low-poly target set `polygon.use_smooth = False` directly on every generated polygon. Do not invoke a context-sensitive shading operator just to set a per-face property.
-6. **Use symmetry intentionally.** A Mirror modifier needs a correctly built half-mesh with its center seam on X=0. Keep centerline vertices on the seam, avoid duplicate overlapping halves, and inspect the seam after mirroring.
-7. **Build hair as deliberate locks.** Use tapered low-poly volumes, closed pyramids, or controlled ribbons. Never collapse every extruded vertex to one location; move only the intended cap vertices.
-8. **Use topology appropriate to the model.** Quads are useful for edge flow and deformation; triangles are normal for real-time export; planar n-gons can be fine for static surfaces but need checking and triangulation behavior at export. Do not reject every n-gon blindly.
-9. **No universal triangle cap.** A simple prop and a full-body hero character have different needs. Pick a budget from the target platform, camera distance, silhouette, deformation, and visual importance. Report the actual triangle count and let the user choose the trade-off.
-10. **Materials stay simple by default.** Use a small, intentional palette of solid materials before adding image textures. The reference's colour blocking and silhouette should carry the style.
+## 3. Select the simplest suitable modelling method
 
-## Required workflow
+| Method | Best use | Main caution |
+|---|---|---|
+| Explicit `Mesh.from_pydata` | Deterministic custom panels, rings, low-poly solids | Validate arrays before Blender; it does not invent good edge flow. |
+| BMesh | Topology edits, connectivity inspection, procedural primitives | BMesh is a toolset, not a cleanliness guarantee. |
+| Ring lofts | Heads, necks, torsos, trousers, palms, shoe sections | Ring correspondence, winding, and profile transitions need design. |
+| Swept volumes | Hair locks, fingers, sleeves, curved shoe lasts | Frame flips, taper collapse, and excessive sampling create defects. |
+| Solid panel extrusion | Collars, lapels, ties, eye shapes | Fit panels to the underlying body; flat floating panels fail side review. |
+| Curves/bevels | Interactive strand or piping authoring | Convert and inspect final mesh; radius/twist can change the silhouette. |
+| Geometry Nodes | Reusable parametric scattering or profile workflows | Adds another mental/runtime model; optional, not mandatory. |
+| Sculpt/retopology | Organic art direction and later deformation preparation | Not a substitute for deliberate landmarks; automatic retopology misses semantic loops. |
+| Shared base + morphs | Families of reusable characters | Requires licensed base data and careful fitting; optional asset-backed path. |
 
-### Step 1 — Read the reference
+Prefer data APIs in reusable geometry helpers. Avoid context-sensitive `bpy.ops.mesh.primitive_*_add`, but do not ban all `bpy.ops`: import/export and scene operations may appropriately use operators when context, return status, and output files are checked.
 
-Write down only observable facts first: view directions, pose, silhouette, body proportions, outfit layers, hairstyle mass, face landmarks, palette, and accessories. Label uncertain details as assumptions.
+## 4. Build large forms before detail
 
-For a multi-view reference, confirm all views show the same character, pose, scale, and camera distance. Do not combine mismatched poses or differently scaled images.
+Work in this order unless evidence supports another priority:
 
-### Step 2 — Make a geometric blueprint
+1. Grounded body silhouette and proportions.
+2. Head/jaw/cheek/forehead planes and neck transition.
+3. Hair scalp mass and a small number of designed locks.
+4. Tailored body-derived clothing shells and major panels.
+5. Shoulder/arm transitions, palms, four jointed fingers, and opposed thumb per hand.
+6. Trouser breaks and shaped shoe lasts/soles.
+7. Facial features and small accessories only after the large forms read correctly.
 
-Set world axes and scale before creating geometry. This skill uses Z-up and character-facing +Y by default unless the project requires another convention.
+Use positive small tip radii instead of collapsed zero-radius rings. Maintain consistent ring sizes within a loft. For horizontal rings ordered counter-clockwise from +Z, use reversed start caps, forward end caps, and side quads `(lower_i, lower_next, upper_next, upper_i)`. Recalculate/inspect normals and test signed volume on closed components.
 
-Make a parts list and vertex/face budget. Identify which components are mirrored and which are asymmetric. Keep the large shapes readable before adding small detail.
+### Difficult-part rules
 
-### Step 3 — Build the blockout
+- **Head/face:** An ellipsoid with primitive eyes is only a blockout. Shape chin, jaw, cheeks, temples, and forehead deliberately; align facial features to the actual front surface and inspect the profile.
+- **Hair:** Build a scalp-following cap plus solid tapered locks with control points, width, thickness, and stable frames. Avoid random spikes, collapsed extrusions, and dozens of noisy strips.
+- **Hands:** A palm cube with straight sticks is incomplete. Use a shaped palm, separated jointed fingers with varied lengths, and an opposed thumb. Check left/right direction and intersections.
+- **Clothing:** Derive shells from body sections. Use explicit collar/lapel/tie solids for the lightweight path. Fit every panel in side view. Do not require cloth simulation for a static tailored suit.
+- **Animation topology:** Shoulder, elbow, eyelid, mouth, knuckle, and hip deformation require intentional loops and skinning tests. A closed static mesh or automatic quad remesh does not establish them.
 
-Create a deterministic Blender Python script. Prefer helper functions such as:
+## 5. Keep generation deterministic and editable
 
-- `create_mesh_from_pydata(name, vertices, faces)`
-- `create_bmesh_object(name, build_callback)`
-- `make_material(name, hex_color)`
-- `add_mirrored_half_mesh(...)`
-- `validate_scene_meshes(...)`
+Separate pure geometry from Blender adapters. Reusable functions should accept and return ordinary vertex/face arrays where practical; keep `bpy` object creation, materials, modifiers, import/export, and rendering at the adapter boundary. Use fixed parameters or a recorded seed. Name objects semantically and attach a `character_part` property.
 
-Keep geometry coordinates and face lists explicit. Use `references/bmesh_cheatsheet.md` for tested patterns and API reminders.
+Validate source arrays before `Mesh.from_pydata`: finite XYZ coordinates, valid indices, at least three distinct indices per face, and no repeated face indices. `Mesh.validate()` may correct data; if it changes the mesh, reject and fix the source rather than silently accepting an unintended repair. Set `polygon.use_smooth = False` directly for this flat-shaded style.
 
-### Step 4 — Validate before decorating
+Keep an editable `.blend` when requested. Preserve unapplied working modifiers where useful and export an evaluated copy. Do not join every object merely to reduce the reported count; readability and selective editing matter.
 
-Run `scripts/blender/validate_mesh.py` against the scene. Fix invalid indices, zero-area faces, non-finite coordinates, non-manifold edges, loose vertices, and accidental shading before adding decoration. Treat open boundaries and n-gons according to whether the model is intentionally open or closed.
+## 6. Apply separate quality gates
 
-A passing validator is not proof of artistic quality. It is only a structural gate.
+### Gate A — Python-only tests
 
-### Step 5 — Inspect from multiple views
+Test configuration parsing and pure geometry without Blender: ring counts, sweep endpoints, stable frames, winding, duplicate faces, zero-length edges, degenerate faces, disconnected components, and malformed inputs. Source-text assertions such as “this function name appears” are not geometry tests.
 
-Inspect front, side, and back. Compare the silhouette and proportions to the reference. Check hands, thumb direction, fingers, shoulder transitions, neck, hair volume, lapels, trousers, and shoes. Correct the geometry—not merely the material—when the shape is wrong.
+### Gate B — Blender runtime and structure
 
-Use a rendered preview only when it is practical for the machine. A script that completes is not automatically a visually good model.
+Run with `--python-exit-code 1` so script exceptions produce a failing process. Verify actual artifacts. Check non-finite coordinates, invalid/degenerate geometry, duplicate faces, zero-length edges, edge face counts, winding, signed volume where meaningful, connected components, n-gon planarity, materials, semantic parts, and base/evaluated triangle counts.
 
-### Step 6 — Optimize and export
+Boundary edges are not universally errors. Require watertightness only for components intended to be closed. N-gons are not universally bad; inspect planarity and triangulation. Triangle caps are project-specific.
 
-Apply the requested triangle budget and keep a high-detail working copy if needed. Use the target format: GLB for portable static or skinned assets, FBX for workflows that require it, and OBJ for simple geometry/material transfer. Confirm exporter completion and inspect the exported file in the intended app.
+### Gate C — Export round trip
 
-### Step 7 — Report honestly
+Re-import GLB/glTF/FBX/OBJ and compare geometry, dimensions, materials, semantic metadata where supported, and evaluated triangle counts. For glTF delivery, additionally run the Khronos glTF Validator when available and inspect in the target viewer. File existence is not export validation. Source-scene and exported vertex counts can legitimately differ because of normals, seams, attributes, modifiers, and triangulation.
 
-State the actual triangle count, object count, material count, warnings, Blender version, output paths, and whether the model was visually inspected. Never claim "game-ready," "perfect topology," or "animation-ready" without the corresponding checks. The included generator does not currently create a production rig or skin weights.
+### Gate D — Actual visual-quality review
 
-## Prompting and self-review
+Render or inspect front, side, back, and three-quarter views, plus close-ups of the head and hands when important. Record who/what performed the review and which images were inspected. Check silhouette, proportions, profile, alignment, intersections, hair mass, hand anatomy, clothing fit, palette, and camera framing. Compare with a reference only if one exists.
 
-Use the user's visual reference as the authority. Do not invent details to fill every surface. Prefer a few clear forms over lots of noisy micro-geometry.
+A validator cannot certify attractiveness, resemblance, animation quality, UV quality, or performance. Mark unperformed checks `not_tested`, never `passed`.
 
-Before finishing, ask:
+## 7. Iterate on diagnosed defects
 
-- Does the silhouette read correctly from all supplied views?
-- Are the left/right parts truly mirrored where intended?
-- Are any faces missing, inverted, duplicated, or degenerate?
-- Are there loose vertices or edges?
-- Is the triangle count appropriate for the target use?
-- Are flat-shaded materials consistent with the reference?
-- Did the export actually complete?
+Make one targeted geometric or material change at a time, then rerun only affected structural and visual checks. Classify the defect before editing:
 
-If a test fails, identify the exact geometry or script change and rerun the validator.
+- **Structure:** invalid indices, degenerate geometry, winding, duplicate faces, unintended open edges.
+- **Placement:** floating clothing, misaligned eyes, disconnected-looking neck or wrists.
+- **Proportion/silhouette:** head size, shoulder width, hair mass, hand/foot scale.
+- **Topology intent:** insufficient loops or poor edge placement for the intended deformation.
+- **Shading/composition:** excessive specular highlights, unreadable dark shapes, poor camera crop.
+
+Do not fix a shape problem by adding random detail or changing only the material. Do not hide unresolved defects behind a flattering camera.
+
+## 8. Low-spec production settings
+
+Start with modest meshes, solid materials, flat shading, and 512-pixel previews. Avoid dense subdivision, cloth/hair simulation, large textures, high-sample renders, and multiple concurrent Blender instances. Increase detail only after a visual review identifies a need. Measure actual performance on the target computer; do not invent universal frame times, memory use, or “safe for every integrated GPU” claims.
+
+## 9. Delivery contract
+
+Deliver complete runnable files or exact repository-fitting patches, not pseudocode labelled as finished. Include:
+
+- source and configuration;
+- run instructions and dependency/version assumptions;
+- semantic part manifest and actual counts;
+- Python test results, Blender runtime results, and export round-trip results separately;
+- inspection images and visual-review status;
+- known limitations and unperformed tests;
+- licence/attribution for every reused third-party asset or code path.
+
+Never call the result “production-ready,” “game-ready,” “rigged,” “animation-ready,” “perfect topology,” or “reference-matched” without the corresponding evidence. The included generator produces a static editable multi-part character without a production rig, skin weights, UV workflow, or animation certification.
