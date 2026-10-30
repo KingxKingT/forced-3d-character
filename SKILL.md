@@ -56,7 +56,8 @@ Do not rewrite a working project merely to appear sophisticated. Preserve stable
 | Explicit `Mesh.from_pydata` | Deterministic custom panels, rings, low-poly solids | Validate arrays before Blender; it does not invent good edge flow. |
 | BMesh | Topology edits, connectivity inspection, procedural primitives | BMesh is a toolset, not a cleanliness guarantee. |
 | Ring lofts | Heads, necks, torsos, trousers, palms, shoe sections | Ring correspondence, winding, and profile transitions need design. |
-| Swept volumes | Hair locks, fingers, sleeves, curved shoe lasts | Frame flips, taper collapse, and excessive sampling create defects. |
+| Swept volumes | Fingers, sleeves, curved shoe lasts | Frame flips, taper collapse, and excessive sampling create defects. |
+| Five-parameter hair cards | Stylized locks described by XYZ + width + thickness guides | Hand-authored guides still require reference fitting; a control-point method does not infer a hairstyle by itself. |
 | Solid panel extrusion | Collars, lapels, ties, eye shapes | Fit panels to the underlying body; flat floating panels fail side review. |
 | Curves/bevels | Interactive strand or piping authoring | Convert and inspect final mesh; radius/twist can change the silhouette. |
 | Geometry Nodes | Reusable parametric scattering or profile workflows | Adds another mental/runtime model; optional, not mandatory. |
@@ -82,7 +83,7 @@ Use positive small tip radii instead of collapsed zero-radius rings. Maintain co
 ### Difficult-part rules
 
 - **Head/face:** An ellipsoid with primitive eyes is only a blockout. Shape chin, jaw, cheeks, temples, and forehead deliberately; align facial features to the actual front surface and inspect the profile.
-- **Hair:** Build a scalp-following cap plus solid tapered locks with control points, width, thickness, and stable frames. Avoid random spikes, collapsed extrusions, and dozens of noisy strips.
+- **Hair:** Build a scalp-following cap plus solid tapered locks with control points, width, thickness, and stable frames. The lightweight `scripts/hair_cards.py` module implements a five-parameter card representation inspired by CHARM. The current presets use hand-authored guides; do not claim neural image-to-hair inference. Avoid random spikes, collapsed extrusions, and dozens of noisy strips.
 - **Hands:** A palm cube with straight sticks is incomplete. Use a shaped palm, separated jointed fingers with varied lengths, and an opposed thumb. Check left/right direction and intersections.
 - **Clothing:** Derive shells from body sections. Use explicit collar/lapel/tie solids for the lightweight path. Fit every panel in side view. Do not require cloth simulation for a static tailored suit.
 - **Animation topology:** Shoulder, elbow, eyelid, mouth, knuckle, and hip deformation require intentional loops and skinning tests. A closed static mesh or automatic quad remesh does not establish them.
