@@ -1,0 +1,136 @@
+{
+  "name": "Violet-Eyed Suit Character",
+  "generator": "ai-3d-character-creator",
+  "generator_version": "2.0.0",
+  "blender_version": "4.2.3 LTS",
+  "mesh_object_count": 65,
+  "vertex_count": 2002,
+  "polygon_count": 1791,
+  "triangle_count_base_mesh": 3744,
+  "dimensions": {
+    "x": 1.7399,
+    "y": 0.31556,
+    "z": 1.81213
+  },
+  "materials": [
+    "MAT_EyeWhite",
+    "MAT_Eyes",
+    "MAT_Gold_Details",
+    "MAT_Hair",
+    "MAT_Mouth",
+    "MAT_Shirt",
+    "MAT_Shoe_Soles",
+    "MAT_Shoes",
+    "MAT_Skin",
+    "MAT_Suit",
+    "MAT_Suit_Lapel",
+    "MAT_Tie"
+  ],
+  "part_manifest": {
+    "clothing": [
+      "Collar_L",
+      "Collar_R",
+      "Jacket_Button_1",
+      "Jacket_Button_2",
+      "Jacket_Pocket_Welt_L",
+      "Jacket_Pocket_Welt_R",
+      "Jacket_Tailored_Torso",
+      "Lapel_Notched_L",
+      "Lapel_Notched_R",
+      "Pelvis_Trouser_Loft",
+      "Pocket_Square",
+      "Shirt_Cuff_L",
+      "Shirt_Cuff_R",
+      "Shirt_Shaped_Front",
+      "Sleeve_Continuous_L",
+      "Sleeve_Continuous_R",
+      "Tie_Blade",
+      "Tie_Clip_Subtle_Gold",
+      "Tie_Knot"
+    ],
+    "face": [
+      "Ear_L",
+      "Ear_R",
+      "Eye_White_L",
+      "Eye_White_R",
+      "Eyebrow_L",
+      "Eyebrow_R",
+      "Iris_L",
+      "Iris_R",
+      "Mouth_Line",
+      "Nose_Bridge_And_Tip",
+      "Pupil_L",
+      "Pupil_R",
+      "Upper_Eyelid_L",
+      "Upper_Eyelid_R"
+    ],
+    "hair": [
+      "Hair_Back_Lock_L",
+      "Hair_Back_Lock_R",
+      "Hair_Fringe_Lock_01",
+      "Hair_Fringe_Lock_02",
+      "Hair_Fringe_Lock_03",
+      "Hair_Fringe_Lock_04",
+      "Hair_Fringe_Lock_05",
+      "Hair_Fringe_Lock_06",
+      "Hair_Fringe_Lock_07",
+      "Hair_Scalp_Cap",
+      "Hair_Temple_Lock_L",
+      "Hair_Temple_Lock_R"
+    ],
+    "hands": [
+      "Finger_L_1_Three_Joints",
+      "Finger_L_2_Three_Joints",
+      "Finger_L_3_Three_Joints",
+      "Finger_L_4_Three_Joints",
+      "Finger_R_1_Three_Joints",
+      "Finger_R_2_Three_Joints",
+      "Finger_R_3_Three_Joints",
+      "Finger_R_4_Three_Joints",
+      "Palm_Loft_L",
+      "Palm_Loft_R",
+      "Thumb_L_Opposed",
+      "Thumb_R_Opposed"
+    ],
+    "head": [
+      "Head_Anatomical_Loft",
+      "Neck_Loft"
+    ],
+    "legs": [
+      "Trouser_Leg_L",
+      "Trouser_Leg_R"
+    ],
+    "shoes": [
+      "Shoe_Last_L",
+      "Shoe_Last_R",
+      "Shoe_Sole_L",
+      "Shoe_Sole_R"
+    ]
+  },
+  "requested_formats": [
+    "glb"
+  ],
+  "source_scene": "character.blend",
+  "exports": [
+    {
+      "format": "glb",
+      "path": "character.glb",
+      "bytes": 256548
+    }
+  ],
+  "preview_renders": [
+    "preview_front.png",
+    "preview_side.png",
+    "preview_back.png",
+    "preview_threequarter.png",
+    "preview_head.png"
+  ],
+  "visual_review": {
+    "status": "required_not_performed_by_generator",
+    "reference_comparison": "not_performed_no_reference_input"
+  },
+  "notes": [
+    "Editable static multi-part low-poly character; no armature, skin weights, UV workflow, or animation certification.",
+    "Structural checks and visual inspection are separate required gates."
+  ]
+}
