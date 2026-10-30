@@ -36,7 +36,7 @@ from mesh_tools import (  # noqa: E402
     make_material,
 )
 
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "2.1.0"
 
 
 def parse_args():
@@ -142,61 +142,57 @@ def make_hair_cap(material):
 
 
 def build_hair(material, style):
+    """Build deliberate, asymmetric solid hair clumps rather than repeated spikes.
+
+    Coordinates use +Y as the character's front. Each clump is a separate,
+    tapered low-poly sweep so its silhouette can be art-directed independently.
+    The manhwa_layered style is intentionally distinct from side_swept and short.
+    """
     make_hair_cap(material)
+
     if style == "short":
-        front_count = 4
-    else:
-        front_count = 7
-    for index in range(front_count):
-        fraction = index / max(1, front_count - 1)
-        root_x = -0.095 + fraction * 0.105
-        tip_z = 1.704 + 0.014 * math.sin(fraction * math.pi)
-        sweep = 0.065 if style == "side_swept" else 0.018
-        points = [
-            (root_x, 0.025, 1.807),
-            (root_x + sweep * 0.45, 0.079, 1.777),
-            (root_x + sweep, 0.108, 1.738),
-            (root_x + sweep * 1.25, 0.111, tip_z),
+        locks = [
+            # Small, restrained fringe.
+            ("Fringe_Center_L", [(-0.040, 0.040, 1.806), (-0.055, 0.086, 1.770), (-0.065, 0.108, 1.735)], [0.019, 0.020, 0.002], [0.009, 0.009, 0.0015]),
+            ("Fringe_Center_R", [(0.010, 0.040, 1.811), (0.020, 0.087, 1.775), (0.034, 0.108, 1.748)], [0.020, 0.019, 0.002], [0.009, 0.008, 0.0015]),
+            ("Fringe_Outer_R", [(0.061, 0.020, 1.795), (0.081, 0.073, 1.756), (0.091, 0.090, 1.724)], [0.018, 0.017, 0.002], [0.008, 0.007, 0.0015]),
         ]
-        widths = [0.015, 0.020, 0.017, 0.0018]
-        thicknesses = [0.007, 0.010, 0.007, 0.0015]
+    elif style == "side_swept":
+        locks = [
+            ("Fringe_Sweep_L", [(-0.102, 0.018, 1.802), (-0.067, 0.075, 1.777), (-0.015, 0.108, 1.742)], [0.027, 0.030, 0.002], [0.011, 0.012, 0.0015]),
+            ("Fringe_Sweep_Center", [(-0.057, 0.024, 1.811), (-0.016, 0.083, 1.773), (0.033, 0.111, 1.731)], [0.025, 0.027, 0.002], [0.010, 0.010, 0.0015]),
+            ("Fringe_Sweep_R", [(0.002, 0.020, 1.813), (0.045, 0.078, 1.778), (0.075, 0.103, 1.750)], [0.023, 0.024, 0.002], [0.010, 0.010, 0.0015]),
+            ("Fringe_Tip_R", [(0.067, 0.012, 1.796), (0.091, 0.065, 1.761), (0.102, 0.090, 1.733)], [0.018, 0.018, 0.002], [0.008, 0.008, 0.0015]),
+        ]
+    else:  # manhwa_layered (the default reference-driven style)
+        locks = [
+            # Long, separated bangs: deliberately varied direction and length.
+            ("Bang_Center_Long", [(-0.032, 0.026, 1.817), (-0.017, 0.080, 1.775), (-0.006, 0.111, 1.716)], [0.026, 0.030, 0.0018], [0.011, 0.012, 0.0014]),
+            ("Bang_Left_Long", [(-0.084, 0.018, 1.802), (-0.078, 0.076, 1.761), (-0.099, 0.105, 1.700)], [0.027, 0.029, 0.0018], [0.011, 0.011, 0.0014]),
+            ("Bang_Left_Split", [(-0.054, 0.030, 1.819), (-0.046, 0.088, 1.784), (-0.057, 0.116, 1.744)], [0.021, 0.023, 0.0018], [0.009, 0.010, 0.0014]),
+            ("Bang_Mid_Right", [(0.010, 0.030, 1.817), (0.030, 0.087, 1.776), (0.047, 0.112, 1.725)], [0.025, 0.027, 0.0018], [0.010, 0.011, 0.0014]),
+            ("Bang_Right_Long", [(0.061, 0.018, 1.803), (0.083, 0.071, 1.763), (0.102, 0.100, 1.709)], [0.026, 0.028, 0.0018], [0.010, 0.011, 0.0014]),
+            ("Bang_Right_Split", [(0.040, 0.025, 1.818), (0.054, 0.083, 1.789), (0.067, 0.111, 1.753)], [0.020, 0.022, 0.0018], [0.009, 0.009, 0.0014]),
+            # Side locks frame the cheeks and deliberately differ left/right.
+            ("Temple_L_Long", [(-0.087, 0.025, 1.778), (-0.115, 0.049, 1.710), (-0.111, 0.058, 1.642)], [0.025, 0.022, 0.002], [0.011, 0.009, 0.0015]),
+            ("Temple_R_Short", [(0.091, 0.022, 1.778), (0.119, 0.048, 1.713), (0.114, 0.056, 1.666)], [0.023, 0.020, 0.002], [0.010, 0.009, 0.0015]),
+            # Crown locks break the cap silhouette without random spikes.
+            ("Crown_Sweep_L", [(-0.074, -0.005, 1.790), (-0.055, -0.022, 1.826), (-0.015, -0.028, 1.839)], [0.023, 0.020, 0.002], [0.009, 0.008, 0.0015]),
+            ("Crown_Sweep_R", [(0.012, -0.008, 1.813), (0.051, -0.018, 1.835), (0.082, -0.004, 1.807)], [0.023, 0.020, 0.002], [0.009, 0.008, 0.0015]),
+            # Back locks overlap the scalp and create a readable rear silhouette.
+            ("Back_L_Layer", [(-0.060, -0.071, 1.778), (-0.091, -0.092, 1.708), (-0.074, -0.089, 1.638)], [0.028, 0.026, 0.002], [0.010, 0.009, 0.0015]),
+            ("Back_R_Layer", [(0.050, -0.073, 1.779), (0.087, -0.093, 1.714), (0.072, -0.088, 1.651)], [0.028, 0.024, 0.002], [0.010, 0.009, 0.0015]),
+        ]
+
+    for name, points, widths, thicknesses in locks:
         add_sweep(
-            f"Hair_Fringe_Lock_{index + 1:02d}",
+            f"Hair_{name}",
             points,
             widths,
             thicknesses,
             material,
             "hair",
-            sides=6,
-            samples_per_segment=2,
-        )
-    for sign, side in ((-1, "L"), (1, "R")):
-        add_sweep(
-            f"Hair_Temple_Lock_{side}",
-            [
-                (sign * 0.09, 0.035, 1.78),
-                (sign * 0.119, 0.050, 1.70),
-                (sign * 0.119, 0.052, 1.625),
-            ],
-            [0.017, 0.015, 0.0025],
-            [0.010, 0.009, 0.002],
-            material,
-            "hair",
-            sides=6,
-            samples_per_segment=2,
-        )
-        add_sweep(
-            f"Hair_Back_Lock_{side}",
-            [
-                (sign * 0.065, -0.075, 1.77),
-                (sign * 0.095, -0.092, 1.68),
-                (sign * 0.080, -0.085, 1.585),
-            ],
-            [0.025, 0.022, 0.003],
-            [0.009, 0.008, 0.002],
-            material,
-            "hair",
-            sides=6,
+            sides=5,
             samples_per_segment=2,
         )
 
