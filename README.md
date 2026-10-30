@@ -1,66 +1,101 @@
-# AI 3D Character Creator
+# AI 3D Character Creator — Low-Spec Procedural Toolkit
 
-A universal low-poly modeling skill and Blender code toolkit. It is designed to work on modest PCs by default: an AI plans the shape and writes deterministic Blender Python, while Blender builds the actual mesh locally. No local neural image-to-3D model is required.
+A reusable modelling skill and Blender Python toolkit for building **real editable 3D characters locally**. The default path targets an 11th-generation Intel Core i3, 8 GB RAM, Intel integrated graphics, and no dedicated GPU. An external AI can plan and write code; Blender performs the actual mesh generation. No cloud 3D generator, paid API, local neural model, or large weight download is required.
 
-## Default target: modest hardware
+## What changed in this improved version
 
-The baseline target is an 11th-gen Intel Core i3, 8 GB RAM, and Intel integrated graphics.
+The original primitive-based blockout has been refactored rather than discarded. The CLI and JSON configuration remain, while reusable geometry and validation are now independently testable.
 
-- No local diffusion, TRELLIS, Pixal3D, Hunyuan3D, or large local LLM required.
-- Use direct mesh data and BMesh operations for procedural geometry.
-- Use a small number of objects, simple solid materials, flat shading, and modest previews.
-- Work in stages: silhouette blockout → important forms → topology checks → multi-view inspection → export.
+- Shaped ring-lofted head, neck, tailored torso, trousers, and palms.
+- Solid swept hair locks, continuous sleeves, jointed fingers, opposed thumbs, and shoe lasts.
+- Fitted shirt, notched lapel, collar, tie, and pocket solids that follow the torso instead of floating in side view.
+- Pure Python loft, sweep, panel, vector, and structural-inspection algorithms.
+- Duplicate-face, zero-length-edge, winding, volume, component, planarity, semantic-part, and evaluated-triangle checks.
+- Export re-import validation, editable `.blend` output, six inspection views, and an optional real Blender integration test.
 
-See [docs/low-spec-workflow.md](docs/low-spec-workflow.md).
+The result is a **static editable multi-part low-poly character**. It is not automatically a production sculpt, rigged character, UV-mapped asset, animation-ready deformation mesh, or reference-matched likeness. See [VERIFICATION.md](VERIFICATION.md) for the exact tests and visual review performed on this delivered version.
 
-## What is included
+## Repository layout
 
-- `SKILL.md`: universal low-poly workflow with hardware tiers and quality gates.
-- `references/bmesh_cheatsheet.md`: correct examples for explicit meshes, BMesh, pyramid hair, mirroring, flat shading, and materials.
-- `scripts/blender/validate_mesh.py`: structural scene checks for geometry, non-manifold edges, degenerate faces, loose vertices, triangle budgets, shading, and materials.
-- `scripts/blender/create_character.py`: an existing procedural character blockout generator.
-- `scripts/blender/validate_character.py`: validates that an exported model can be re-imported and contains geometry.
-- `scripts/validate_config.py`: JSON config validation.
-- `docs/kimi-style-fact-check.md`: fact-check of the proposed "Kimi-style" rules.
-- `docs/local-ai-backend.md`: optional Effigy backend for stronger hardware.
-
-## The important distinction
-
-A skill cannot turn every AI into Kimi or guarantee professional results. It can give different AI models a consistent plan, code templates, and validation steps. The model's visual reasoning and coding capabilities still matter.
-
-BMesh is useful, but it does not automatically make topology clean. The workflow combines explicit geometry, validation, and visual iteration. The fact-check explains why banning every `bpy.ops` call, every n-gon, or every model over 1,500 triangles is not technically sound.
-
-## Quick start: procedural low-poly modeling
-
-Open Blender and use its Scripting workspace, or run a saved scene through Blender's background mode.
-
-Check the mesh in the current scene:
-
-```bash
-blender --background character.blend --python scripts/blender/validate_mesh.py -- \
-  --report build/mesh-report.json --max-triangles 6000
+```text
+SKILL.md                         universal modelling and quality-gate workflow
+references/bmesh_cheatsheet.md   practical construction and defect-fix reference
+configs/default_character.json
+examples/dark_suit_purple_eyes.json
+scripts/
+  geometry_core.py              Blender-independent geometry and diagnostics
+  validate_config.py
+  blender/
+    mesh_tools.py               validated bpy/bmesh adapter and materials
+    create_character.py         deterministic character generator
+    validate_mesh.py            source-scene structural/semantic validation
+    validate_character.py       export re-import validation
+tests/
+  test_config.py
+  test_geometry_core.py
+  test_blender_integration.py   skipped when Blender is unavailable
+docs/
+  pipeline.md
+  low-spec-workflow.md
+  testing.md
+  visual-review.md
+  architecture.md
+  roadmap.md
+  licences.md
 ```
 
-Use `--strict-budget` only when the project has an agreed triangle cap. Use `--require-watertight` only for closed solids; open surfaces can intentionally have boundary edges.
+## Requirements
 
-The existing configurable blockout generator can still be run as a starting point:
+- Python 3.10+ for configuration and pure geometry tests.
+- Blender 4.2 LTS or a compatible later version for generation and Blender tests.
+- No third-party Python packages are required by the generator.
+
+Blender's Python API can change between versions. Test the exact installed version rather than assuming every operator or socket is identical.
+
+## Generate a character
+
+Run from the repository root. `--python-exit-code 1` is important: without it, Blender may return process status zero after a Python exception.
 
 ```bash
-blender --background --factory-startup --python scripts/blender/create_character.py -- \
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/blender/create_character.py -- \
   --config examples/dark_suit_purple_eyes.json \
   --outdir build/dark-suit \
-  --formats glb
+  --formats glb --save-blend --render-views
 ```
 
-For reliable output quality, inspect the generated result from front, side, and back rather than assuming a successful script means a good model.
+Outputs include `character.glb`, editable `character.blend`, `model_report.json`, the copied configuration, and front/side/back/three-quarter/head/hand previews. Use `--no-render` to suppress previews or omit `--save-blend` if only export files are needed. The generator clears the startup scene, so run it in a dedicated background process rather than an unsaved interactive scene.
 
-## Optional high-spec AI generation
+The JSON controls name, scale, palette, hair style, facial options, outfit details, render resolution/samples, and exports. Existing `side_swept` and `short` hair configurations remain supported.
 
-[Effigy](https://github.com/SifuInTheShell/Effigy) is documented as an optional local AI image-to-3D pipeline for stronger hardware. It is not required for the low-spec workflow. Its current guide targets Windows 11, an NVIDIA RTX GPU with 16 GB VRAM for the full character path, 32 GB RAM recommended, and 70–160 GB disk depending on the selected model packs. The four-view model pack is about 22 GB additional.
+## Validate the source scene
 
-Do not install Effigy, TRELLIS.2, Pixal3D multi-view, or other large model packs on the baseline i3/8 GB integrated-graphics machine. See [local AI backend notes](docs/local-ai-backend.md) first.
+```bash
+blender --background build/dark-suit/character.blend --python-exit-code 1 \
+  --python scripts/blender/validate_mesh.py -- \
+  --report build/dark-suit/source-validation.json \
+  --max-triangles 6000 --strict-budget \
+  --require-watertight --require-single-component \
+  --require-character-parts --strict-winding
+```
 
-## Run Python checks
+The strict flags above match this generator's closed, single-component-per-object static design. They are not universal rules for every mesh. Open clothing, hair cards, and intentional multi-component objects need different flags. Non-planar polygons are reported separately because curved sweeps and body-fitted panels require triangulation review.
+
+## Validate the exported file
+
+```bash
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/blender/validate_character.py -- \
+  --file build/dark-suit/character.glb \
+  --report build/dark-suit/roundtrip-validation.json \
+  --require-character-parts
+```
+
+For glTF delivery, also run the [Khronos glTF Validator](https://github.com/KhronosGroup/glTF-Validator) and inspect the model in the intended viewer. Blender re-import alone cannot validate every glTF accessor, extension, or target-engine behaviour.
+
+## Run tests
+
+Python-only checks:
 
 ```bash
 python -m compileall -q scripts tests
@@ -69,30 +104,23 @@ python scripts/validate_config.py examples/dark_suit_purple_eyes.json
 python -m unittest discover -s tests -v
 ```
 
-CI checks Python syntax and configuration tests. They do not run Blender or validate the live Blender mesh script; that requires Blender installed.
+Real Blender integration test:
 
-## Repository layout
-
-```text
-SKILL.md
-references/
-  bmesh_cheatsheet.md
-configs/
-examples/
-scripts/
-  validate_config.py
-  blender/
-    create_character.py
-    validate_character.py
-    validate_mesh.py
-docs/
-  low-spec-workflow.md
-  kimi-style-fact-check.md
-  local-ai-backend.md
-tests/
-.github/workflows/tests.yml
+```bash
+BLENDER_BIN=/path/to/blender python -m unittest discover \
+  -s tests -p test_blender_integration.py -v
 ```
 
-## License
+If `blender` is on PATH, `BLENDER_BIN` is optional. `REQUIRE_BLENDER=1` documents that a runtime is required; `SKIP_BLENDER_RENDER=1` shortens the test while retaining generation, strict validation, and GLB round trip. See [docs/testing.md](docs/testing.md) for the meaning and limits of each test class.
 
-This repository's code is MIT. Effigy and any future third-party code, checkpoints, and asset packs remain separate components under their own licences. No third-party model weights are bundled here.
+## Visual review is still mandatory
+
+Structural success does not establish good anatomy, resemblance, attractive silhouettes, or correct clothing fit. Inspect the rendered views using [docs/visual-review.md](docs/visual-review.md). Record unperformed checks as `not_tested`. If no reference image was supplied, do not claim a reference comparison.
+
+## Low-spec and optional high-spec paths
+
+Use small meshes, solid materials, modest previews, one character at a time, and no simulation-heavy default. See [docs/low-spec-workflow.md](docs/low-spec-workflow.md). Any neural or high-spec backend documented elsewhere is optional and separate; it is not needed by this generator.
+
+## Licence and third-party work
+
+Repository code is MIT. No third-party character bases, model weights, or asset packs are bundled. Optional projects and CC0 asset routes are listed with their separate licence boundaries in [docs/licences.md](docs/licences.md) and [REFERENCES.md](REFERENCES.md).

@@ -1,65 +1,68 @@
-# Pipeline and configuration reference
+# Pipeline and Configuration Reference
 
-## Overview
+## 1. Plan
 
-The default workflow is a light, procedural Blender pipeline suitable for modest hardware. An AI translates the reference into a geometric plan and Python code; Blender creates the mesh locally. This does not require local neural inference or a paid 3D API.
+Identify observable references, intended use, coordinate system, proportions, semantic parts, topology intent, triangle budget, materials, cameras, and output formats. Do not claim an image comparison when no image exists. The universal decision process is in [../SKILL.md](../SKILL.md).
 
-For an 11th-gen Intel Core i3, 8 GB RAM, and integrated graphics, use the low-spec settings in [low-spec-workflow.md](low-spec-workflow.md).
+## 2. Configure
 
-A stronger computer can optionally connect to [Effigy](https://github.com/SifuInTheShell/Effigy) for neural image-to-3D and a more advanced retopology, UV, texturing, rigging, and export pipeline. It is a separate application and is not part of the low-spec requirement. See [local-ai-backend.md](local-ai-backend.md).
+The JSON schema supports:
 
-## Geometry approach
+- `name`, `scale` (0.1–5.0), `style=low_poly_stylized`, and `pose=t_pose`;
+- `palette` six-digit RGB colours;
+- `features`: `side_swept` or `short` hair, eye colour, brows, ears, nose, mouth, beard, buttons, and pocket square;
+- `outfit`: tailored jacket with shirt, lapels, tie, and cuffs toggles;
+- `render`: resolution 128–4096, samples 1–512, transparency;
+- `exports`: non-duplicated `glb`, `gltf`, `fbx`, and/or `obj`.
 
-- Use `Mesh.from_pydata` when the vertices and faces are already known.
-- Use BMesh for topology operations and procedural mesh construction.
-- Avoid primitive-add operators in reusable mesh-building helpers; they depend on selection and active context.
-- Do not ban every `bpy.ops` call. Some import/export and scene operations are operators; use them with deliberate context and verify their results.
-- Validate geometry before export. BMesh does not automatically guarantee clean topology.
-- Set `polygon.use_smooth = False` for the requested flat-shaded aesthetic.
-- Use quad flow when deformation/editing needs it, triangles for runtime export, and n-gons only where planar/static geometry and export triangulation are acceptable.
-- Do not impose a universal 1,500-triangle cap. Choose a budget for the platform, camera distance, silhouette, and animation needs.
-
-See [references/bmesh_cheatsheet.md](../references/bmesh_cheatsheet.md) and [kimi-style-fact-check.md](kimi-style-fact-check.md).
-
-## Existing procedural blockout configuration
-
-The JSON config used by `scripts/blender/create_character.py` describes:
-
-- `name`: descriptive character name.
-- `scale`: global scale multiplier (0.1–5.0).
-- `style`: current builder targets `low_poly_stylized`.
-- `pose`: current builder supports the configured T-pose-style arrangement.
-- `palette`: six-digit hex colours.
-- `features`: hair style and optional face/outfit accents.
-- `outfit`: jacket details such as lapels, tie, shirt, and cuffs.
-- `render`: preview resolution, samples, and background transparency.
-- `exports`: GLB, GLTF, FBX, or OBJ.
-
-Run `python scripts/validate_config.py examples/dark_suit_purple_eyes.json` before Blender generation.
-
-## Validate the current Blender scene
+Validate without Blender:
 
 ```bash
-blender --background character.blend --python scripts/blender/validate_mesh.py -- \
-  --report build/mesh-report.json --max-triangles 6000
+python scripts/validate_config.py examples/dark_suit_purple_eyes.json
 ```
 
-This checks structural issues only. The triangle cap is configurable and warns by default. Boundary edges are allowed unless `--require-watertight` is supplied.
-
-## Fallback generator
+## 3. Generate locally
 
 ```bash
-blender --background --factory-startup --python scripts/blender/create_character.py -- \
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/blender/create_character.py -- \
   --config examples/dark_suit_purple_eyes.json \
-  --outdir build/test-character \
-  --formats glb
+  --outdir build/character --formats glb --save-blend --render-views
 ```
 
-The script clears the startup scene. Run it as a dedicated background process, not inside an unsaved interactive scene.
+`geometry_core.py` creates deterministic vertex/face arrays. `mesh_tools.py` validates arrays before Blender creation and adds flat-shaded materials and semantic metadata. The generator assembles profile-lofted and swept parts, fits clothing panels to the torso, optionally saves `.blend`, exports selected meshes with evaluated modifiers, and renders inspection views.
 
-## Known limitations
+The script clears the startup scene. Use a dedicated background process. A successful script is not a visual approval.
 
-- The procedural blockout is not neural image-to-3D.
-- The existing character blockout has no production armature, skin weights, facial rig, or animation clips.
-- Structural validation does not judge reference similarity, anatomy, visual polish, UV quality, or deformation.
-- No Blender runtime test is claimed unless run with Blender installed.
+## 4. Validate source geometry
+
+```bash
+blender --background build/character/character.blend --python-exit-code 1 \
+  --python scripts/blender/validate_mesh.py -- \
+  --report build/character/source-validation.json \
+  --max-triangles 6000 --strict-budget \
+  --require-watertight --require-single-component \
+  --require-character-parts --strict-winding
+```
+
+This generator intentionally uses closed, single-component objects. Other projects may allow open boundaries or multiple components. Non-planar fitted panels and sweep quads are warnings by default because their export triangulation needs inspection; they are not automatically invalid.
+
+## 5. Validate export and target use
+
+```bash
+blender --background --factory-startup --python-exit-code 1 \
+  --python scripts/blender/validate_character.py -- \
+  --file build/character/character.glb \
+  --report build/character/roundtrip-validation.json \
+  --require-character-parts
+```
+
+Run the Khronos glTF Validator for GLB/glTF delivery and inspect the intended viewer. Repeat re-import for FBX/OBJ when requested. Source and exported counts can differ due to modifiers, triangulation, normals, and attribute splits.
+
+## 6. Review and iterate
+
+Inspect front, side, back, three-quarter, head, and hand images with [visual-review.md](visual-review.md). Fix diagnosed geometry/placement defects and rerun affected checks. Record `not_tested` for missing review, reference comparison, animation, UV, and target-hardware performance checks.
+
+## Current limitations
+
+The generator is procedural, not neural image-to-3D. It creates a static multi-part character without a production armature, skin weights, facial rig, UV workflow, or animation clips. Attractive close-up anatomy and hairstyle still depend on art direction and iteration. No universal render-time or memory promise is made for the baseline computer.
