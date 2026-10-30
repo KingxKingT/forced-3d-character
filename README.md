@@ -25,6 +25,7 @@ configs/default_character.json
 examples/dark_suit_purple_eyes.json
 scripts/
   geometry_core.py              Blender-independent geometry and diagnostics
+  hair_cards.py                 five-parameter CHARM-inspired hair-card mesh builder
   validate_config.py
   blender/
     mesh_tools.py               validated bpy/bmesh adapter and materials
