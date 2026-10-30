@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environments
+.venv/
+venv/
+.env
+
+# Generated assets and Blender backups
+build/
+dist/
+*.blend
+*.blend1
+*.blend2
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/

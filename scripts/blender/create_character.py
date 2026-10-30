@@ -380,11 +380,13 @@ def main():
         errors = validate_config(cfg)
         if errors:
             raise ValueError("Invalid configuration:\n- " + "\n- ".join(errors))
-    except ImportError:
-        pass
+    except ImportError as exc:
+        raise RuntimeError("Could not import scripts/validate_config.py; run the generator from a complete repository checkout.") from exc
     formats = args.formats or cfg.get("exports", ["glb"])
     if not formats:
         raise ValueError("At least one export format must be requested")
+    if len(set(formats)) != len(formats):
+        raise ValueError("Duplicate export formats are not allowed")
     outdir.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)

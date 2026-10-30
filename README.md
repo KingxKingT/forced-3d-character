@@ -1,25 +1,30 @@
 # AI 3D Character Creator
 
-A practical starter project for AI agents that need to create **real, editable stylized 3D characters** in Blender—not only write image prompts. It includes a procedural Blender generator, reusable JSON character specs, export support, front/side/back previews, validation scripts, tests, and a skill guide for agent workflows.
+A procedural Blender project and agent skill for creating **real, editable low-poly 3D character meshes** from structured character specifications. It is intended for stylized game characters—especially a dark-suited character with black hair, violet eyes, and subtle gold details—not just image prompts.
 
-## What it does
+## What is included
 
-- Builds a stylized low-poly human from named meshes and materials.
-- Supports configurable proportions, palette, suit, hair, eyes, facial features, and accessories.
-- Exports GLB/GLTF, FBX, and/or OBJ from Blender.
-- Can render front, side, and back orthographic previews.
-- Writes a JSON report with mesh/object/material counts, dimensions, and export checks.
-- Includes a reference-style example: dark tailored suit, black hair, violet eyes, and restrained gold details.
+- `SKILL.md`: instructions for an AI agent to plan, generate, inspect, validate, and iterate on character assets.
+- `scripts/blender/create_character.py`: procedural Blender mesh/material creation, export, and front/side/back preview rendering.
+- `scripts/blender/validate_character.py`: re-imports an export and checks for real geometry, bounds, and materials.
+- `scripts/validate_config.py`: validates JSON settings without needing Blender.
+- `configs/default_character.json` and `examples/dark_suit_purple_eyes.json`: editable character specifications.
+- `tests/` and `.github/workflows/tests.yml`: Python tests and continuous-integration checks.
+- `docs/pipeline.md`: workflow notes, settings, and known constraints.
 
-> **Honest limitation:** this is a procedural asset generator, not a neural text-to-3D model. It makes a customizable starting character from Blender geometry; a person or vision-capable agent should inspect the renders and iterate. The initial character is not rigged and should not be called animation-ready.
+## Important capability boundary
+
+This is a deterministic procedural model builder, **not** a neural text-to-3D model. It creates a customizable low-poly starting character from Blender geometry. An AI agent can translate a reference into a configuration and iterate on renders, but automated geometry still needs visual review.
+
+The character is **not rigged** and has no armature, skin weights, facial rig, or hand-authored production UV workflow. Do not call it animation-ready or production-ready. The Python tests do not prove that Blender exports or renders; those checks need a machine with Blender installed.
 
 ## Requirements
 
-- Blender 4.2+ recommended (the script uses Blender's Python API; no `pip install bpy` needed).
-- Python 3.10+ for the configuration tests and helper utilities.
-- Optional: a game engine or 3D viewer that can open GLB/GLTF.
+- Blender 4.2+ recommended.
+- Python 3.10+ for configuration validation and unit tests.
+- Optional: a GLB/GLTF viewer or game engine for inspecting exported assets.
 
-Verify Blender is available:
+Check Blender availability:
 
 ```bash
 blender --version
@@ -27,7 +32,7 @@ blender --version
 
 ## Quick start
 
-From the repository root:
+Run these commands from the repository root:
 
 ```bash
 blender --background --factory-startup --python scripts/blender/create_character.py -- \
@@ -37,7 +42,7 @@ blender --background --factory-startup --python scripts/blender/create_character
   --render-views
 ```
 
-Expected outputs include:
+Expected output:
 
 ```text
 build/dark-suit/
@@ -52,9 +57,9 @@ build/dark-suit/
 └── preview_back.png
 ```
 
-Export availability can depend on the installed Blender build. The script fails clearly if a requested exporter is unavailable or an export is not created.
+The available exporters depend on your Blender installation. The script exits with an error if a requested export does not complete or produces an empty file.
 
-Validate the GLB in Blender:
+Validate the generated GLB:
 
 ```bash
 blender --background --factory-startup --python scripts/blender/validate_character.py -- \
@@ -62,41 +67,48 @@ blender --background --factory-startup --python scripts/blender/validate_charact
   --report build/dark-suit/validation.json
 ```
 
-The validator imports the model into a clean scene and checks that import succeeded, mesh geometry exists, dimensions are non-zero, and the model contains materials. A passing report is not a substitute for visual review.
+This validates import and basic structure; it does not certify artistic quality, topology, UVs, rigging, or animation deformation.
 
-## Customize a character
+## Configure a character
 
 1. Copy `configs/default_character.json` or edit `examples/dark_suit_purple_eyes.json`.
-2. Change the palette, scale, hair, suit style, tie, eyes, and accessory options.
-3. Run the generator again to a new output directory so prior results are preserved.
-4. Review all preview views; fix obvious issues and rerun.
+2. Change supported palette colors, overall scale, hair style, facial feature flags, outfit details, render resolution, and export formats.
+3. Generate to a new output directory so earlier results are preserved.
+4. Inspect the front, side, and back previews. Pay special attention to hands, silhouette, clothing intersections, and facial placement.
+5. If a required style, pose, or feature is not supported by the current generator, extend the code and add tests rather than setting an option the generator ignores.
 
-See [`SKILL.md`](SKILL.md) for the agent workflow and [`docs/pipeline.md`](docs/pipeline.md) for parameters, export details, and known limits.
+Supported values are validated before generation. Current style is `low_poly_stylized`, current pose is `t_pose`, supported hair styles are `side_swept` and `short`, and output formats are GLB, GLTF, FBX, and OBJ.
 
-## Run tests
-
-The tests do not require Blender and check configuration validity and repository structure:
+## Run checks without Blender
 
 ```bash
+python -m compileall -q scripts tests
+python scripts/validate_config.py configs/default_character.json
+python scripts/validate_config.py examples/dark_suit_purple_eyes.json
 python -m unittest discover -s tests -v
 ```
 
-To test actual generation and exports, run the Blender quick start on a machine with Blender installed. The CI workflow runs Python-side tests; it does not claim to validate a real Blender render.
+The GitHub Actions workflow runs these Python-side checks on Python 3.10, 3.11, and 3.12. It does not claim to have rendered a Blender model.
 
 ## Repository layout
 
 ```text
-SKILL.md                              Agent instructions
-configs/default_character.json        Baseline character config
-examples/dark_suit_purple_eyes.json   Reference-inspired configuration
-scripts/blender/create_character.py   Blender procedural generator
-scripts/blender/validate_character.py Import and asset validation
-scripts/validate_config.py             Config validator (standard Python)
-tests/                                Unit tests
-.github/workflows/tests.yml           CI checks
-docs/pipeline.md                      Workflow and limitations
+SKILL.md
+configs/
+examples/
+scripts/
+  validate_config.py
+  blender/create_character.py
+  blender/validate_character.py
+tests/
+docs/
+.github/workflows/tests.yml
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for test expectations and Blender validation guidance.
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+MIT. See [LICENSE](LICENSE).
