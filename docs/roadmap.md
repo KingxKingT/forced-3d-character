@@ -6,7 +6,7 @@ The order is deliberate. Better eye shaders or a neural backend cannot compensat
 |---:|---|---|---|---|
 | 1 | Replace box torso/limbs with profile lofts | Very high | Low–medium | Completed; shaped jacket, trousers, sleeves, neck. |
 | 2 | Replace ellipsoid head with jaw/cheek/forehead sections | Very high | Medium | Completed at stylized blockout-plus level; inspect close-up. |
-| 3 | Build scalp cap and designed swept locks | Very high | Medium | Completed; further art direction still improves grouping/readability. |
+| 3 | Build scalp cap and designed swept locks | Very high | Medium | Initial five-parameter `manhwa_layered` card builder implemented; actual Blender visual review still required. |
 | 4 | Fit shirt/lapels/tie to the body envelope | High | Medium | Completed after side-render defect review. |
 | 5 | Shape palms and add jointed varied fingers/opposed thumbs | High | Medium | Completed static hands; no grip/deformation claim. |
 | 6 | Replace shoe cubes with lasts and separate soles | Medium–high | Low–medium | Completed; inspect front and side silhouette. |
@@ -27,3 +27,8 @@ The highest-value next change is not “more polygons everywhere.” Define a sm
 ## Suggested review cadence
 
 For each row, preserve the previous version, change one visual system, run relevant pure/Blender checks, render the same cameras, and record unresolved issues. Do not mark a row complete from code inspection alone. A feature that passes structure but fails the side-view silhouette remains visually incomplete.
+
+
+## CHARM-inspired hair-card follow-up
+
+A lightweight independent five-parameter hair-card builder now exists in `scripts/hair_cards.py`, and the Blender generator uses it for all three current hair presets. It is not the CHARM autoregressive model and does not perform image-to-hair inference. The next step is to render the integrated Blender output, compare the same reference angles, and art-direct the guide positions/widths before considering an optional high-spec CHARM model adapter. See [docs/charm-hair-integration.md](charm-hair-integration.md).
